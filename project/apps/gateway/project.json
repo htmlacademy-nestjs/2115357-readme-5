@@ -6,9 +6,7 @@
   "targets": {
     "build": {
       "executor": "@nx/webpack:webpack",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
       "options": {
         "target": "node",
@@ -16,11 +14,14 @@
         "outputPath": "dist/apps/gateway",
         "main": "apps/gateway/src/main.ts",
         "tsConfig": "apps/gateway/tsconfig.app.json",
-        "assets": [
-          "apps/gateway/src/assets"
-        ],
+        "assets": ["apps/gateway/src/assets"],
         "isolatedConfig": true,
-        "webpackConfig": "apps/gateway/webpack.config.js"
+        "webpackConfig": "apps/gateway/webpack.config.js",
+        "tsPlugins": [
+            {
+              "name": "@nestjs/swagger/plugin"
+            }
+          ]
       },
       "configurations": {
         "development": {},
@@ -31,6 +32,7 @@
       "executor": "@nx/js:node",
       "defaultConfiguration": "development",
       "options": {
+        "port": 46029,
         "buildTarget": "gateway:build"
       },
       "configurations": {
