@@ -1,0 +1,28 @@
+import { Injectable } from "@nestjs/common/decorators";
+import { ARepository } from "../lib/abstract-repository";
+import { UserEntity } from "../entities/user.entity";
+import { EUserDTOFields, UserDTO } from "../dtos/user.dto";
+import { EId } from "../entities/db.entity";
+import { Scope } from "@nestjs/common/interfaces";
+
+@Injectable({ scope: Scope.DEFAULT })
+export class UserRepositoryService extends ARepository<UserEntity>{
+    constructor() {
+        super()
+    }
+    async prepareUser(user: UserDTO): Promise<UserEntity | null> {
+        if(await this.findByEmail(user[EUserDTOFields.email])) {
+            return null
+        }
+        return {
+            [EId.id]: '',
+            fullName: user.fullName,
+            avatar: user.avatar,
+            [EUserDTOFields.email]: user[EUserDTOFields.email],
+            [EUserDTOFields.password]: user[EUserDTOFields.password]
+        }
+    }
+    async findByEmail(email: string): Promise<UserEntity | undefined> {
+        return this.items.find((item) => item[EUserDTOFields.email] === email)
+    }
+}
