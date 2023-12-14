@@ -27,6 +27,7 @@
       "executor": "@nx/js:node",
       "defaultConfiguration": "development",
       "options": {
+        "port": 46026,
         "buildTarget": "notifier:build"
       },
       "configurations": {

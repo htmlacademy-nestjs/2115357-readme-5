@@ -1,22 +1,26 @@
-/**
- * This is not a production server yet!
- * This is only a minimal backend to get started.
- */
+import { ValidationPipe } from '@nestjs/common'
+import { NestFactory } from '@nestjs/core'
+import { AppModule } from './app/app.module'
+import { envConfig, makeSwagger } from '@project/libraries/shared'
 
-import { Logger } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
+const _envConfig = envConfig()
 
-import { AppModule } from './app/app.module';
-
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  const globalPrefix = 'api';
-  app.setGlobalPrefix(globalPrefix);
-  const port = process.env.PORT || 3000;
-  await app.listen(port);
-  Logger.log(
-    `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`
-  );
-}
-
-bootstrap();
+;(async function () {
+    const app = await NestFactory.create(AppModule)
+    app.setGlobalPrefix(`${_envConfig.API_PREFIX}`)
+    app.useGlobalPipes(new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+    }))
+    makeSwagger(app, {
+        path: `${_envConfig.API_DOCS_PATH}`,
+        title: `${_envConfig.API_DOCS_BLOG_TITLE}`,
+        description: `${_envConfig.API_DOCS_BLOG_DESCRIPTION}`,
+        version: `${_envConfig.API_PREFIX}`,
+    })
+    await app.listen(+_envConfig.BLOG_API_PORT)
+    console.log('')
+    console.log(`Blog is running on: http://localhost:${_envConfig.BLOG_API_PORT}/${_envConfig.API_PREFIX}`)
+    console.log(`Blog docs is running on: http://localhost:${_envConfig.BLOG_API_PORT}/${_envConfig.API_DOCS_PATH}`)
+    console.log('')
+})();
