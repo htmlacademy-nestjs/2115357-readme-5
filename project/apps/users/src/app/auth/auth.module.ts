@@ -4,9 +4,10 @@ import { AuthService } from './auth.service';
 import { NestjsFormDataModule } from 'nestjs-form-data';
 import {  BcryptService, HashPasswordService } from '@project/libraries/shared';
 import { UserRepositoryModule } from '../user-repository.module';
+import { UserMongoRepositoryModule } from '../user-mongo-repository.module';
 
 @Module({
-    imports: [NestjsFormDataModule, UserRepositoryModule],
+    imports: [NestjsFormDataModule, UserRepositoryModule, UserMongoRepositoryModule],
     controllers: [AuthController],
     providers: [AuthService,
         {

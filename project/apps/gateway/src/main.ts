@@ -1,26 +1,28 @@
 import { ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app/app.module'
+import { envConfig, makeSwagger } from '@project/libraries/shared';
 
-;import { makeSwagger } from '@project/libraries/shared';
-(async function () {
+const _envConfig = envConfig()
+
+;(async function () {
     try {
         const app = await NestFactory.create(AppModule)
-        app.setGlobalPrefix(process.env.API_PREFIX as string)
+        app.setGlobalPrefix(_envConfig.API_PREFIX as string)
         app.useGlobalPipes(new ValidationPipe({
             whitelist: true,
             forbidNonWhitelisted: true,
         }))
         makeSwagger(app, {
-            path: process.env.API_DOCS_PATH as string,
-            title: process.env.API_DOCS_GATEWAY_TITLE as string,
-            description: process.env.API_DOCS_GATEWAY_DESCRIPTION as string,
-            version: process.env.API_PREFIX as string,
+            path: `${_envConfig.API_DOCS_PATH}`,
+            title: `${_envConfig.API_DOCS_GATEWAY_TITLE}`,
+            description: `${_envConfig.API_DOCS_GATEWAY_DESCRIPTION}`,
+            version: `${_envConfig.API_PREFIX}`,
         })
-        await app.listen(process.env.GATEWAY_API_PORT as string)
+        await app.listen(+_envConfig.GATEWAY_API_PORT)
         console.log('')
-        console.log(`Gateway is running on: http://localhost:${process.env.GATEWAY_API_PORT}/${process.env.API_PREFIX}`)
-        console.log(`Gateway docs is running on: http://localhost:${process.env.GATEWAY_API_PORT}/${process.env.API_DOCS_PATH}`)
+        console.log(`Gateway is running on: http://localhost:${_envConfig.GATEWAY_API_PORT}/${_envConfig.API_PREFIX}`)
+        console.log(`Gateway docs is running on: http://localhost:${_envConfig.GATEWAY_API_PORT}/${_envConfig.API_DOCS_PATH}`)
         console.log('')
     }catch(er) {
         console.log(er)

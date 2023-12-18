@@ -2,7 +2,7 @@ import type {} from "@nestjs/common"
 import { ArrayMaxSize, IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, IsUrl, MaxLength, MinLength, NotContains, Validate, ValidateIf } from "class-validator"
 import { IsYoutubeLink } from "../lib/is-youtube-link.validator"
 import { ApiProperty, PickType } from '@nestjs/swagger'
-import { config } from "../lib/config";
+import { appConfig } from "../configs/app.config";
 import { HasMimeType, IsFile, MaxFileSize, MemoryStoredFile } from "nestjs-form-data"
 import { EAllowedUploadedPostPhotoMimeTypes } from "../lib/file.validator"
 import { ERouteParams } from "../lib/route-params"
@@ -29,7 +29,7 @@ export enum EPostDTOFields {
     tags = 'tags',
 }
 
-const envConfig = config()
+const _appConfig = appConfig()
 
 export class PostDTO {
     @ApiProperty()
@@ -40,8 +40,8 @@ export class PostDTO {
     @ApiProperty()
     @ValidateIf(_this => _this.postType === EPostType.video || _this.postType === EPostType.text)
     @IsString()
-    @MinLength(envConfig.POST_TITLE_MIN_LENGTH)
-    @MaxLength(envConfig.POST_TITLE_MAX_LENGTH)
+    @MinLength(+_appConfig.POST_TITLE_MIN_LENGTH)
+    @MaxLength(+_appConfig.POST_TITLE_MAX_LENGTH)
     readonly title?: string;
 
     @ApiProperty()
@@ -53,29 +53,29 @@ export class PostDTO {
     @ApiProperty()
     @ValidateIf(_this => _this.postType === EPostType.text)
     @IsString()
-    @MinLength(envConfig.POST_SPOILER_MIN_LENGTH)
-    @MaxLength(envConfig.POST_SPOILER_MAX_LENGTH)
+    @MinLength(+_appConfig.POST_SPOILER_MIN_LENGTH)
+    @MaxLength(+_appConfig.POST_SPOILER_MAX_LENGTH)
     readonly spoiler?: string;
 
     @ApiProperty()
     @ValidateIf(_this => _this.postType === EPostType.text)
     @IsString()
-    @MinLength(envConfig.POST_TEXT_MIN_LENGTH)
-    @MaxLength(envConfig.POST_TEXT_MAX_LENGTH)
+    @MinLength(+_appConfig.POST_TEXT_MIN_LENGTH)
+    @MaxLength(+_appConfig.POST_TEXT_MAX_LENGTH)
     readonly text?: string;
 
     @ApiProperty()
     @ValidateIf(_this => _this.postType === EPostType.citation)
     @IsString()
-    @MinLength(envConfig.POST_CITATION_MIN_LENGTH)
-    @MaxLength(envConfig.POST_CITATION_MAX_LENGTH)
+    @MinLength(+_appConfig.POST_CITATION_MIN_LENGTH)
+    @MaxLength(+_appConfig.POST_CITATION_MAX_LENGTH)
     readonly citation?: string;
 
     @ApiProperty()
     @ValidateIf(_this => _this.postType === EPostType.citation)
     @IsString()
-    @MinLength(envConfig.POST_CITATION_AUTHOR_MIN_LENGTH)
-    @MaxLength(envConfig.POST_CITATION_AUTHOR_MAX_LENGTH)
+    @MinLength(+_appConfig.POST_CITATION_AUTHOR_MIN_LENGTH)
+    @MaxLength(+_appConfig.POST_CITATION_AUTHOR_MAX_LENGTH)
     readonly citationAuthor?: string;
 
     @ApiProperty()
@@ -87,14 +87,14 @@ export class PostDTO {
     @ValidateIf(_this => _this.postType === EPostType.link)
     @IsOptional()
     @IsString()
-    @MinLength(envConfig.POST_LINK_DESCRIPTION_MIN_LENGTH)
-    @MaxLength(envConfig.POST_LINK_DESCRIPTION_MAX_LENGTH)
+    @MinLength(+_appConfig.POST_LINK_DESCRIPTION_MIN_LENGTH)
+    @MaxLength(+_appConfig.POST_LINK_DESCRIPTION_MAX_LENGTH)
     readonly linkDescription?: string;
 
     @ApiProperty({ type: 'string', format: 'binary', required: false })
     @ValidateIf(_this => _this.postType === EPostType.photo)
     @IsFile()
-    @MaxFileSize(envConfig.POST_PHOTO_MAX_FILE_SIZE)
+    @MaxFileSize(+_appConfig.POST_PHOTO_MAX_FILE_SIZE)
     @HasMimeType(Object.values(EAllowedUploadedPostPhotoMimeTypes))
     readonly photo?: MemoryStoredFile;
 
@@ -102,16 +102,16 @@ export class PostDTO {
     @IsOptional()
     @Transform(({ value }) => typeof value === 'string' ? value.toString().split(',').map(String) : value)
     @IsArray()
-    @ArrayMaxSize(envConfig.POST_MAX_TAGS_ALLOWED)
+    @ArrayMaxSize(+_appConfig.POST_MAX_TAGS_ALLOWED)
     @IsString({each: true})
     @NotContains(' ', {each: true})
     @NotContains('\\n', {each: true})
     @NotContains('\\r', {each: true})
     @NotContains('&nbsp;', {each: true})
-    @MinLength(envConfig.POST_TAG_MIN_LENGTH, {
+    @MinLength(+_appConfig.POST_TAG_MIN_LENGTH, {
         each: true,
     })
-    @MaxLength(envConfig.POST_TAG_MAX_LENGTH, {
+    @MaxLength(+_appConfig.POST_TAG_MAX_LENGTH, {
         each: true,
     })
     readonly [EPostDTOFields.tags]?: string[]
@@ -131,8 +131,8 @@ export class PostTypeDTO extends PickType(PostDTO, [EPostDTOFields.postType] as 
 export class PostTagDTO {
     @ApiProperty()
     @IsString()
-    @MinLength(envConfig.POST_TAG_MIN_LENGTH)
-    @MaxLength(envConfig.POST_TAG_MAX_LENGTH)
+    @MinLength(+_appConfig.POST_TAG_MIN_LENGTH)
+    @MaxLength(+_appConfig.POST_TAG_MAX_LENGTH)
     @NotContains(' ')
     @NotContains('\\n')
     @NotContains('\\r')

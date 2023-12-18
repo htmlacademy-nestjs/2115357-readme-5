@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { PostRepositoryService } from '@project/libraries/shared';
+import { PostRepositoryService, TimeStampService } from '@project/libraries/shared';
 
 @Module({
-    providers: [PostRepositoryService],
-    exports: [PostRepositoryService]
+    providers: [PostRepositoryService, TimeStampService],
+    exports: [PostRepositoryService, TimeStampService]
 })
 export class PostRepositoryModule {}
