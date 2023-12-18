@@ -1,14 +1,16 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
-import { config } from '@project/libraries/shared';
+import { UsersMongoModule } from './users-mongo.module';
 
 @Module({
-  imports: [AuthModule, UserModule, ConfigModule.forFeature(config)],
+  imports: [
+    AuthModule,
+    UserModule,
+    UsersMongoModule,
+  ],
   controllers: [],
   providers: [],
-  exports: []
+  exports: [],
 })
 export class AppModule {}

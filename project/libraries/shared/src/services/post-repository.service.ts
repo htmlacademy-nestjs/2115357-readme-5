@@ -1,14 +1,16 @@
-import { Injectable } from "@nestjs/common/decorators";
+import { Inject, Injectable } from "@nestjs/common/decorators";
 import { ARepository } from "../lib/abstract-repository";
 import { PostEntity } from "../entities/post.entity";
 import { EPostDTOFields, PostDTO } from "../dtos/post.dto";
 import { EId } from "../entities/db.entity";
 import { Scope } from "@nestjs/common/interfaces";
+import { ETimeStampTypes, TimeStampService } from "./time-stamp.service";
 
 @Injectable({ scope: Scope.DEFAULT })
 export class PostRepositoryService extends ARepository<PostEntity>{
-    constructor() {
-        super()
+    constructor(
+        @Inject(TimeStampService) protected readonly timeStampService: TimeStampService<ETimeStampTypes.timestamp>) {
+        super(timeStampService)
     }
     async preparePost(post: PostDTO): Promise<PostEntity> {
         const _post: {

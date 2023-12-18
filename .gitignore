@@ -10,7 +10,6 @@
 coverage
 *.log
 .env
-test-files
 core
 
 # See http://help.github.com/ignore-files/ for more about ignoring files.
@@ -38,7 +37,7 @@ node_modules
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-
+.pnpm-store
 # misc
 /.sass-cache
 /connect.lock
