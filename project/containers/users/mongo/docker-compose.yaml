@@ -1,0 +1,37 @@
+services:
+
+  users-mongo:
+    container_name: ${MONGO_INITDB_CONTAINER}
+    image: mongo
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: always
+    command: mongod --port ${MONGO_INITDB_PORT}
+    ports:
+      - 127.0.0.1:${MONGO_INITDB_PORT}:${MONGO_INITDB_PORT}
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME
+      - MONGO_INITDB_ROOT_PASSWORD
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 2m
+    networks:
+      - html
+networks:
+  html:
+    external: true
+    name: html
+    
+##db.stats()
+##docker exec -it b90e39ed0be8 bash
+##mongosh -u root -p --authenticationDatabase=admin
+##db.getCollection("hhh").count()
+##db.getCollection("hhh").find({name:/.*m.*/})
+##db.getCollection("hhh").findOneAndUpdate({email:'mmm'}, {$set:{web:''}})
+
+##docker exec -it 67b7ba3d565b mongodump --host=localhost --port=46017 --username=root --authenticationDatabase=admin --db=users --gzip --archive=/dump/dump.gz
+##docker cp 67b7ba3d565b:/dump containers/mongo/dump.gz

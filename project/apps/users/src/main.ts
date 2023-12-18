@@ -1,24 +1,26 @@
 import { ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app/app.module'
-import { makeSwagger } from '@project/libraries/shared'
+import { envConfig, makeSwagger } from '@project/libraries/shared'
+
+const _envConfig = envConfig()
 
 ;(async function () {
     const app = await NestFactory.create(AppModule)
-    app.setGlobalPrefix(process.env.API_PREFIX as string)
+    app.setGlobalPrefix(`${_envConfig.API_PREFIX}`)
     app.useGlobalPipes(new ValidationPipe({
         whitelist: true,
         forbidNonWhitelisted: true,
     }))
     makeSwagger(app, {
-        path: process.env.API_DOCS_PATH as string,
-        title: process.env.API_DOCS_USER_TITLE as string,
-        description: process.env.API_DOCS_USER_DESCRIPTION as string,
-        version: process.env.API_PREFIX as string,
+        path: `${_envConfig.API_DOCS_PATH}`,
+        title: `${_envConfig.API_DOCS_USER_TITLE}`,
+        description: `${_envConfig.API_DOCS_USER_DESCRIPTION}`,
+        version: `${_envConfig.API_PREFIX}`,
     })
-    await app.listen(process.env.USERS_API_PORT as string)
+    await app.listen(+_envConfig.USERS_API_PORT)
     console.log('')
-    console.log(`Users is running on: http://localhost:${process.env.USERS_API_PORT}/${process.env.API_PREFIX}`)
-    console.log(`Users docs is running on: http://localhost:${process.env.USERS_API_PORT}/${process.env.API_DOCS_PATH}`)
+    console.log(`Users is running on: http://localhost:${_envConfig.USERS_API_PORT}/${_envConfig.API_PREFIX}`)
+    console.log(`Users docs is running on: http://localhost:${_envConfig.USERS_API_PORT}/${_envConfig.API_DOCS_PATH}`)
     console.log('')
 })();

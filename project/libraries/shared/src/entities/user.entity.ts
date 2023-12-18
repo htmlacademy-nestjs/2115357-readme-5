@@ -1,6 +1,4 @@
-import { TUserId, UserDTO } from "../dtos/user.dto";
-import { DbEntity, EId } from "./db.entity";
+import { TUserId, UserDTOSchema } from "../dtos/user.dto";
+import { DbEntity } from "./db.entity";
 
-export class UserEntity extends UserDTO implements DbEntity<TUserId>{
-    [EId.id]: TUserId;
-}
+export type UserEntity = DbEntity<TUserId> & UserDTOSchema

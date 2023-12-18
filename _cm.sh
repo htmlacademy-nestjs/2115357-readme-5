@@ -10,9 +10,11 @@ export PATH="$PATH:"/usr/local/bin/
         git push origin $BRANCH -f
     fi
 
+##pnpm nx serve users
 ##nx g library libraries/shared --dry-run
 ##nx generate @nx/node:library shared
 
+##pnpm nx g @nx/nest:module apps/users/src/app/users-mongo
 ##nx g @nx/nest:service auth
 
 #nx run-many --target=serve --all --maxParallel=10
@@ -20,3 +22,4 @@ export PATH="$PATH:"/usr/local/bin/
 
 #nx run-many --target=build --prod --all
 
+##grep -slR "PRIVATE" ~/.ssh/ | xargs ssh-add

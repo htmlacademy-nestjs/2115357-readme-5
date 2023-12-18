@@ -14,6 +14,7 @@ export enum EUsersRouts {
 export enum EBlogRouts {
     actions = 'actions',
     post = 'post',
+    rePublish = 'republish',
     repost = 'repost',
     like = 'like',
     comment = 'comment',

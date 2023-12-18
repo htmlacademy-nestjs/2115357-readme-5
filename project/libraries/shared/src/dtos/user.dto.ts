@@ -1,53 +1,65 @@
 import type {} from "@nestjs/common";
 import {
-    IsEmail,
     IsString,
     MaxLength,
     MinLength,
     IsNotEmpty,
     IsOptional,
+    Matches,
   } from 'class-validator';
 import { ApiProperty, PickType} from '@nestjs/swagger';
-import { config } from "../lib/config";
+import { appConfig } from "../configs/app.config";
 import { HasMimeType, IsFile, MaxFileSize, MemoryStoredFile } from "nestjs-form-data";
 import { EAllowedUploadedAvatarMimeTypes } from "../lib/file.validator";
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { mongoUsersConfig } from "../configs/mongo-users.config";
+import {Types} from 'mongoose'
+import { EDbDates, EId } from "../entities/db.entity";
+import { TTimeStampTypes } from "../services/time-stamp.service";
 
-export type TUserId = string
+export type TUserId = Types.ObjectId
 
-const envConfig = config()
+const _appConfig = appConfig()
+const _mongoUsersConfig = mongoUsersConfig()
+const emailPattern = new RegExp('^[a-zA-Z]+?\.[a-zA-Z]+@[a-zA-Z-]+?\.[a-zA-Z]{2,8}$')
 
 export enum EUserDTOFields {
     email = 'email',
-    password = 'password'
+    password = 'password',
+    preparedAvatar = 'preparedAvatar'
 }
 
+@Schema()
 export class UserDTO {
+    @Prop()
     @ApiProperty()
-    @IsEmail()
+    @Matches(emailPattern, {message: 'email should be an email'})
     readonly [EUserDTOFields.email]: string;
 
+    @Prop()
     @ApiProperty()
     @IsString()
-    @MinLength(envConfig.USER_NAME_MIN_LENGTH)
-    @MaxLength(envConfig.USER_NAME_MAX_LENGTH)
+    @MinLength(+_appConfig.USER_NAME_MIN_LENGTH)
+    @MaxLength(+_appConfig.USER_NAME_MAX_LENGTH)
     readonly fullName: string;
 
-    @ApiProperty()
+    @Prop()
+    @ApiProperty({ type: 'string', minLength: +_appConfig.USER_PASSWORD_MIN_LENGTH, maxLength: +_appConfig.USER_PASSWORD_MAX_LENGTH, required: true })
     @IsString()
-    @MinLength(envConfig.USER_PASSWORD_MIN_LENGTH)
-    @MaxLength(envConfig.USER_PASSWORD_MAX_LENGTH)
+    @MinLength(+_appConfig.USER_PASSWORD_MIN_LENGTH)
+    @MaxLength(+_appConfig.USER_PASSWORD_MAX_LENGTH)
     readonly [EUserDTOFields.password]: string;
 
     @ApiProperty({ type: 'string', format: 'binary', required: false })
     @IsOptional()
     @IsFile()
-    @MaxFileSize(envConfig.USER_AVATAR_MAX_FILE_SIZE)
+    @MaxFileSize(+_appConfig.USER_AVATAR_MAX_FILE_SIZE)
     @HasMimeType(Object.values(EAllowedUploadedAvatarMimeTypes))
     readonly avatar?: MemoryStoredFile|undefined;
 }
 
 export class UserIdDTO {
-    @ApiProperty()
+    @ApiProperty({type: String, required: true})
     @IsString()
     @IsNotEmpty()
     readonly userId: TUserId;
@@ -61,8 +73,50 @@ export class UserSignInDTO extends PickType(UserDTO, [EUserDTOFields.email] as c
 }
 
 export class UserUpdatePasswordDTO extends PickType(UserDTO, [EUserDTOFields.password] as const) {
-    @ApiProperty()
+    @ApiProperty({ type: 'string', minLength: +_appConfig.USER_PASSWORD_MIN_LENGTH, maxLength: +_appConfig.USER_PASSWORD_MAX_LENGTH, required: true })
     @IsString()
     @IsNotEmpty()
     readonly currentPassword: string;
+}
+
+declare interface SchemaOptions {
+    pluralization: boolean;
+    collection: string;
+}
+@Schema({ collection: _mongoUsersConfig.MONGO_USERS_DEFAULT_DB_NAME as string, pluralization: false, autoIndex: true, timestamps:true} as SchemaOptions)
+export class UserDTOSchema extends UserDTO {
+    @Prop()
+    [EUserDTOFields.preparedAvatar]?: string
+}
+export const UserSchema = SchemaFactory.createForClass(UserDTOSchema)
+UserSchema.index({[EUserDTOFields.email]: 1,}, {unique: true,});
+
+export class ReturnedUserRDO {
+    @ApiProperty({ type: 'string', required: true })
+    [EId.id]: TUserId;
+
+    @ApiProperty({ type: 'string', minLength: +_appConfig.USER_NAME_MIN_LENGTH, maxLength: +_appConfig.USER_NAME_MAX_LENGTH, required: true })
+    fullName: string;
+
+    @ApiProperty()
+    avatar?: string;
+
+    @ApiProperty()
+    [EUserDTOFields.email]: string;
+
+    @ApiProperty({ type: 'number|Date', required: true })
+    [EDbDates.createdAt]:TTimeStampTypes;
+
+    @ApiProperty({ type: 'number|Date', required: true })
+    [EDbDates.updatedAt]:TTimeStampTypes;
+}
+
+export class AuthUserRDO {
+    @ApiProperty({ type: 'string', required: true })
+    [EId.id]: TUserId;
+}
+
+export class ChangeUserPasswordRDO {
+    @ApiProperty({ type: 'boolean', required: true })
+    result: boolean
 }
