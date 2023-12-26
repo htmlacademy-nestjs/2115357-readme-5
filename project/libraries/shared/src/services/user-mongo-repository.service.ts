@@ -53,8 +53,8 @@ export class UserMongoRepositoryService extends AMongoRepository<UserEntity>{
             [EId.id]: dbUser[EMongoId._id] as TUserId,
             fullName: dbUser.fullName,
             [EUserDTOFields.email]: dbUser[EUserDTOFields.email],
-            [EDbDates.created_at]: dbUser[EDbDates.created_at] as TTimeStampTypes,
-            [EDbDates.updated_at]: dbUser[EDbDates.updated_at] as TTimeStampTypes,
+            [EDbDates.createdAt]: dbUser[EDbDates.createdAt] as TTimeStampTypes,
+            [EDbDates.updatedAt]: dbUser[EDbDates.updatedAt] as TTimeStampTypes,
         }
         if(dbUser[EUserDTOFields.preparedAvatar]) {
             returnedUser.avatar = dbUser[EUserDTOFields.preparedAvatar]

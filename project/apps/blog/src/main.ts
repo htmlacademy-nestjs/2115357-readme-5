@@ -1,3 +1,4 @@
+import cookieParser from 'cookie-parser';
 import { ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app/app.module'
@@ -18,6 +19,7 @@ const _envConfig = envConfig()
         description: `${_envConfig.API_DOCS_BLOG_DESCRIPTION}`,
         version: `${_envConfig.API_PREFIX}`,
     })
+    app.use(cookieParser())
     await app.listen(+_envConfig.BLOG_API_PORT)
     console.log('')
     console.log(`Blog is running on: http://localhost:${_envConfig.BLOG_API_PORT}/${_envConfig.API_PREFIX}`)

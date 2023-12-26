@@ -21,3 +21,5 @@ export PATH="$PATH:"/usr/local/bin/
 #nx run-many --target=serve --all --maxParallel=10 --configuration=production
 
 #nx run-many --target=build --prod --all
+
+##grep -slR "PRIVATE" ~/.ssh/ | xargs ssh-add

@@ -27,11 +27,14 @@ const appConfig = registerAs('appConfig', (): TConfig => ({
     POST_TAG_MAX_LENGTH: +(process.env.POST_TAG_MAX_LENGTH as string ?? undefined),
     POST_MAX_TAGS_ALLOWED: +(process.env.POST_MAX_TAGS_ALLOWED as string ?? undefined),
 
+    POSTS_LIST_DEFAULT_LIMIT: +(process.env.POSTS_LIST_DEFAULT_LIMIT as string ?? undefined),
+    POSTS_LIST_DEFAULT_OFFSET: +(process.env.POSTS_LIST_DEFAULT_OFFSET as string ?? undefined),
+
     COMMENT_TEXT_MIN_LENGTH: +(process.env.COMMENT_TEXT_MIN_LENGTH as string ?? undefined),
     COMMENT_TEXT_MAX_LENGTH: +(process.env.COMMENT_TEXT_MAX_LENGTH as string ?? undefined),
 
-    POSTS_LIST_DEFAULT_LIMIT: +(process.env.POSTS_LIST_DEFAULT_LIMIT as string ?? undefined),
-    POSTS_LIST_DEFAULT_OFFSET: +(process.env.POSTS_LIST_DEFAULT_OFFSET as string ?? undefined),
+    COMMENTS_LIST_DEFAULT_LIMIT: +(process.env.COMMENTS_LIST_DEFAULT_LIMIT as string ?? undefined),
+    COMMENTS_LIST_DEFAULT_OFFSET: +(process.env.COMMENTS_LIST_DEFAULT_OFFSET as string ?? undefined),
 }))
 
 validateConfig(appConfig())

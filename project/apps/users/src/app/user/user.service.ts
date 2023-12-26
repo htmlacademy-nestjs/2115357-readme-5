@@ -13,7 +13,7 @@ export class UserService {
         const {userId: id} = userId
         const user = await this.userRepository.findOne(id)
         if(!user) {
-            throw new HttpException(`${id} User not found`, HttpStatus.NOT_FOUND)
+            throw new HttpException(`User with id ${id} not found`, HttpStatus.NOT_FOUND)
         }
         return await this.userRepository.prepareReturnedUser(user as UserEntity)
     }

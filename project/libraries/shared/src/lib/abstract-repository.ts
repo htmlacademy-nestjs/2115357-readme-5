@@ -9,7 +9,7 @@ export type TId = TPostId|TUserId
 
 export interface IRepository<T extends DbEntity<TId>> {
     timeStampType?: ETimeStampTypes;
-    findAll(): Promise<T[]>;
+    findAll({options, include, where}:{options?:any, include?:any, where?:any}): Promise<T[]>;
     findOne(id: T[EId.id]|T[EMongoId._id]): Promise<T|undefined> | Promise<TMongoReturnType<T>>;
     save(item: T): Promise<T[EId.id]|T[EMongoId._id]>;
     update(id: T[EId.id]|T[EMongoId._id], item: T): Promise<boolean>;
@@ -30,8 +30,8 @@ export abstract class ARepository<T extends DbEntity<TId>> implements IRepositor
     }
     async save(item: T): Promise<T[EId.id]> {
         item[EId.id] = randomUUID()
-        item[EDbDates.created_at] = this.timeStampService.get(this.timeStampType)
-        item[EDbDates.updated_at] = item[EDbDates.created_at]
+        item[EDbDates.createdAt] = this.timeStampService.get(this.timeStampType)
+        item[EDbDates.updatedAt] = item[EDbDates.createdAt]
         this.items.push(item)
         return item[EId.id]
     }
@@ -42,8 +42,8 @@ export abstract class ARepository<T extends DbEntity<TId>> implements IRepositor
         }
         const newItems = this.items.filter((item) => item[EId.id] !== id)
         item[EId.id] = id
-        item[EDbDates.created_at] = previousItem[EDbDates.created_at]
-        item[EDbDates.updated_at] = this.timeStampService.get(this.timeStampType)
+        item[EDbDates.createdAt] = previousItem[EDbDates.createdAt]
+        item[EDbDates.updatedAt] = this.timeStampService.get(this.timeStampType)
         newItems.push(item)
         this.items = [...newItems]
         return true

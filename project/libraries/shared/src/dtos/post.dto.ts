@@ -1,5 +1,5 @@
 import type {} from "@nestjs/common"
-import { ArrayMaxSize, IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, IsUrl, MaxLength, MinLength, NotContains, Validate, ValidateIf } from "class-validator"
+import { ArrayMaxSize, IsArray, IsDateString, IsEnum, IsNotEmpty, IsOptional, IsString, IsUrl, MaxLength, MinLength, NotContains, Validate, ValidateIf } from "class-validator"
 import { IsYoutubeLink } from "../lib/is-youtube-link.validator"
 import { ApiProperty, PickType } from '@nestjs/swagger'
 import { appConfig } from "../configs/app.config";
@@ -7,6 +7,14 @@ import { HasMimeType, IsFile, MaxFileSize, MemoryStoredFile } from "nestjs-form-
 import { EAllowedUploadedPostPhotoMimeTypes } from "../lib/file.validator"
 import { ERouteParams } from "../lib/route-params"
 import { Transform } from "class-transformer"
+import { EDbDates, EId, EPrismaDbTables } from "../entities/db.entity";
+import { TUserId } from "./user.dto";
+import { JsonValue } from "@prisma/client/runtime/library";
+import { TCommentId } from "./comment.dto";
+import { ECommentDbEntityFields } from "../entities/comment.entity";
+import { ETagDbEntityFields, TTagId } from "../entities/tag.entity";
+import { TLikeId } from "./like.dto";
+import { ELikeDbEntityFields } from "../entities/like.entity";
 
 export type TPostId = string
 
@@ -18,6 +26,11 @@ export enum EPostType {
     link = 'link'
 }
 
+export enum EPostState {
+    published = 'published',
+    draft = 'draft'
+}
+
 export enum EPostSortBy {
     date = 'date',
     likes = 'likes',
@@ -27,17 +40,18 @@ export enum EPostSortBy {
 export enum EPostDTOFields {
     postType = 'postType',
     tags = 'tags',
+    photo = 'photo'
 }
 
 const _appConfig = appConfig()
 
 export class PostDTO {
-    @ApiProperty()
-    @IsString()
+    @ApiProperty({required: false})
     @IsEnum(EPostType)
-    readonly [EPostDTOFields.postType]: EPostType
+    readonly postType: EPostType
 
     @ApiProperty()
+    @Transform((_this) => _this.obj.postType === EPostType.video || _this.obj.postType === EPostType.text ? _this.value : undefined)
     @ValidateIf(_this => _this.postType === EPostType.video || _this.postType === EPostType.text)
     @IsString()
     @MinLength(+_appConfig.POST_TITLE_MIN_LENGTH)
@@ -45,12 +59,14 @@ export class PostDTO {
     readonly title?: string;
 
     @ApiProperty()
+    @Transform((_this) => _this.obj.postType === EPostType.video ? _this.value : undefined)
     @ValidateIf(_this => _this.postType === EPostType.video)
     @IsUrl()
     @Validate(IsYoutubeLink)
     readonly youtubeVideoUrl?: string
 
     @ApiProperty()
+    @Transform((_this) => _this.obj.postType === EPostType.text ? _this.value : undefined)
     @ValidateIf(_this => _this.postType === EPostType.text)
     @IsString()
     @MinLength(+_appConfig.POST_SPOILER_MIN_LENGTH)
@@ -58,6 +74,7 @@ export class PostDTO {
     readonly spoiler?: string;
 
     @ApiProperty()
+    @Transform((_this) => _this.obj.postType === EPostType.text ? _this.value : undefined)
     @ValidateIf(_this => _this.postType === EPostType.text)
     @IsString()
     @MinLength(+_appConfig.POST_TEXT_MIN_LENGTH)
@@ -65,6 +82,7 @@ export class PostDTO {
     readonly text?: string;
 
     @ApiProperty()
+    @Transform((_this) => _this.obj.postType === EPostType.citation ? _this.value : undefined)
     @ValidateIf(_this => _this.postType === EPostType.citation)
     @IsString()
     @MinLength(+_appConfig.POST_CITATION_MIN_LENGTH)
@@ -72,6 +90,7 @@ export class PostDTO {
     readonly citation?: string;
 
     @ApiProperty()
+    @Transform((_this) => _this.obj.postType === EPostType.citation ? _this.value : undefined)
     @ValidateIf(_this => _this.postType === EPostType.citation)
     @IsString()
     @MinLength(+_appConfig.POST_CITATION_AUTHOR_MIN_LENGTH)
@@ -79,11 +98,13 @@ export class PostDTO {
     readonly citationAuthor?: string;
 
     @ApiProperty()
+    @Transform((_this) => _this.obj.postType === EPostType.link ? _this.value : undefined)
     @ValidateIf(_this => _this.postType === EPostType.link)
     @IsUrl()
     readonly link?: string
 
     @ApiProperty()
+    @Transform((_this) => _this.obj.postType === EPostType.link ? _this.value : undefined)
     @ValidateIf(_this => _this.postType === EPostType.link)
     @IsOptional()
     @IsString()
@@ -92,15 +113,16 @@ export class PostDTO {
     readonly linkDescription?: string;
 
     @ApiProperty({ type: 'string', format: 'binary', required: false })
+    @Transform((_this) => _this.obj.postType === EPostType.photo ? _this.value : undefined)
     @ValidateIf(_this => _this.postType === EPostType.photo)
     @IsFile()
     @MaxFileSize(+_appConfig.POST_PHOTO_MAX_FILE_SIZE)
     @HasMimeType(Object.values(EAllowedUploadedPostPhotoMimeTypes))
-    readonly photo?: MemoryStoredFile;
+    readonly [EPostDTOFields.photo]?: MemoryStoredFile;
 
     @ApiProperty({required: false })
     @IsOptional()
-    @Transform(({ value }) => typeof value === 'string' ? value.toString().split(',').map(String) : value)
+    @Transform(({ value }) => typeof value === 'string' ? value.toLowerCase().split(',').map(String) : value)
     @IsArray()
     @ArrayMaxSize(+_appConfig.POST_MAX_TAGS_ALLOWED)
     @IsString({each: true})
@@ -124,9 +146,35 @@ export class PostIdDTO {
     readonly postId: TPostId;
 }
 
-export class UpdatePostDTO extends PostDTO {}
+export class UpdatePostDTO extends PostDTO {
+    @ApiProperty({required: false })
+    @IsOptional()
+    @Transform(({ value }) => !value ? [] : value)
+    @Transform(({ value }) => typeof value === 'string' ? value.toLowerCase().split(',').map(String) : value)
+    @IsArray()
+    @ArrayMaxSize(+_appConfig.POST_MAX_TAGS_ALLOWED)
+    @IsString({each: true})
+    @NotContains(' ', {each: true})
+    @NotContains('\\n', {each: true})
+    @NotContains('\\r', {each: true})
+    @NotContains('&nbsp;', {each: true})
+    @MinLength(+_appConfig.POST_TAG_MIN_LENGTH, {
+        each: true,
+    })
+    @MaxLength(+_appConfig.POST_TAG_MAX_LENGTH, {
+        each: true,
+    })
+    readonly [EPostDTOFields.tags]?: string[]
+}
+export class RePublishPostDateDTO {
+    @ApiProperty()
+    @IsDateString()
+    [EDbDates.publishedAt]: Date
+}
 
-export class PostTypeDTO extends PickType(PostDTO, [EPostDTOFields.postType] as const) {}
+export class PostTypeDTO extends PickType(PostDTO, [EPostDTOFields.postType] as const) {
+
+}
 
 export class PostTagDTO {
     @ApiProperty()
@@ -145,4 +193,82 @@ export class PostKeyphraseDTO {
     @IsString()
     @IsNotEmpty()
     readonly keyphrase: string;
+}
+
+export class AddPostRDO {
+    @ApiProperty()
+    [EId.id]: TPostId
+}
+export class UpdatePostRDO {
+    @ApiProperty()
+    result: boolean
+}
+export class DeletePostRDO {
+    @ApiProperty()
+    result: boolean
+}
+
+export class RePostRDO {
+    @ApiProperty()
+    [EId.id]: TPostId
+}
+
+export enum EPostDbEntityFields {
+    postType = 'type',
+    postBody = 'body',
+    tags = 'tags',
+    likes = 'likes',
+    comments = 'comments',
+    userId = 'authorId',
+    postState = 'state',
+    rePosted = 'rePosted',
+    originalPostId = "originalPostId",
+    originalAuthorId = "originalAuthorId",
+}
+
+export class ReturnedPostRDO {
+    @ApiProperty({required: true})
+    [EId.id]: TPostId
+    @ApiProperty({required: true})
+    [EPostDbEntityFields.userId]: TUserId
+    @ApiProperty({required: true})
+    [EPostDbEntityFields.postType]: EPostType
+    @ApiProperty({required: true})
+    [EPostDbEntityFields.postState]: EPostState
+    @ApiProperty({required: true})
+    [EPostDbEntityFields.rePosted]: EPostState
+    @ApiProperty({required: true})
+    [EPostDbEntityFields.originalPostId]: TPostId|null
+    @ApiProperty({required: true})
+    [EPostDbEntityFields.originalAuthorId]: TUserId|null
+    @ApiProperty({required: true})
+    [EPostDbEntityFields.postBody]: JsonValue
+    @ApiProperty({required: true})
+    [EDbDates.createdAt]: string|number
+    @ApiProperty({required: true})
+    [EDbDates.updatedAt]: string|number
+    @ApiProperty({required: true})
+    [EDbDates.publishedAt]: string|number
+    @ApiProperty({required: true})
+    [EPrismaDbTables.likes]: {
+        [EId.id]: TLikeId,
+        [ELikeDbEntityFields.userId]: TUserId,
+        [ELikeDbEntityFields.postId]: TPostId,
+        [EDbDates.createdAt]: string|number,
+        [EDbDates.updatedAt]: string|number,
+    }[]
+    @ApiProperty({required: true})
+    [EPrismaDbTables.comments]: {
+        [EId.id]: TCommentId,
+        [ECommentDbEntityFields.postId]: TPostId,
+        [ECommentDbEntityFields.userId]: TUserId,
+        [ECommentDbEntityFields.comment]: string,
+        [EDbDates.createdAt]: string|number,
+        [EDbDates.updatedAt]: string|number,
+    }[]
+    @ApiProperty({required: true})
+    [EPrismaDbTables.tags]: {
+        [EId.id]: TTagId,
+        [ETagDbEntityFields.name]: string,
+    }[]
 }
