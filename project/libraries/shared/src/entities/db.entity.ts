@@ -1,5 +1,13 @@
 import { TTimeStampTypes } from "../services/time-stamp.service"
 
+export enum EPrismaDbTables {
+    posts = 'posts',
+    likes = 'likes',
+    comments = 'comments',
+    tags = 'tags',
+    feeds = 'feeds'
+}
+
 export enum EId {
     id = 'id',
 }
@@ -8,11 +16,13 @@ export enum EMongoId {
 }
 
 export enum EDbDates {
-    created_at = 'createdAt',
-    updated_at = 'updatedAt',
+    createdAt = 'createdAt',
+    updatedAt = 'updatedAt',
+    publishedAt = 'publishedAt',
 }
-type TDbDates = {
-    [k in EDbDates]?: TTimeStampTypes;
+export type TDbDates = {
+    [EDbDates.createdAt]?: TTimeStampTypes;
+    [EDbDates.updatedAt]?: TTimeStampTypes;
 }
 export type DbEntity<T> = {
     [k in EId.id | EMongoId._id]?: T;

@@ -17,7 +17,7 @@ import {Types} from 'mongoose'
 import { EDbDates, EId } from "../entities/db.entity";
 import { TTimeStampTypes } from "../services/time-stamp.service";
 
-export type TUserId = '' | string | Types.ObjectId
+export type TUserId = Types.ObjectId
 
 const _appConfig = appConfig()
 const _mongoUsersConfig = mongoUsersConfig()
@@ -59,7 +59,7 @@ export class UserDTO {
 }
 
 export class UserIdDTO {
-    @ApiProperty()
+    @ApiProperty({type: String, required: true})
     @IsString()
     @IsNotEmpty()
     readonly userId: TUserId;
@@ -105,10 +105,10 @@ export class ReturnedUserRDO {
     [EUserDTOFields.email]: string;
 
     @ApiProperty({ type: 'number|Date', required: true })
-    [EDbDates.created_at]:TTimeStampTypes;
+    [EDbDates.createdAt]:TTimeStampTypes;
 
     @ApiProperty({ type: 'number|Date', required: true })
-    [EDbDates.updated_at]:TTimeStampTypes;
+    [EDbDates.updatedAt]:TTimeStampTypes;
 }
 
 export class AuthUserRDO {

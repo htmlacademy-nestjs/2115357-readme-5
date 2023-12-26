@@ -2,19 +2,19 @@ import { ApiProperty } from "@nestjs/swagger";
 import { IsNotEmpty, IsString } from "class-validator";
 import { EId } from "../entities/db.entity";
 
-export type TLikeId = string
+export type TFeedId = string
 
-export class LikeIdDTO {
+export class FeedIdDTO {
     @ApiProperty()
     @IsString()
     @IsNotEmpty()
-    readonly likeId: TLikeId;
+    readonly feedId: TFeedId;
 }
-export class AddLikeRDO {
+export class AddFeedRDO {
     @ApiProperty()
-    [EId.id]: TLikeId
+    [EId.id]: TFeedId
 }
-export class DeleteLikeRDO {
+export class DeleteFeedRDO {
     @ApiProperty()
     result: boolean
 }
