@@ -80,7 +80,7 @@ export class InfoService {
     }
     async listPostComments(postId: PostIdDTO, pagination: CommentsPaginationDTO): Promise<ReturnedCommentRDO[]> {
         const {postId:id} = postId
-        const _sortedPaginationParameters = await this.postsPrisma.getSortedPaginationParameters(pagination)
+        const _sortedPaginationParameters = await this.postsPrisma.getSortedPaginationParameters(pagination, true)
         const _whereParameters = await this.postsPrisma.getWhereParameters({
             [ECommentDbEntityFields.postId]: id,
             [EPrismaDbTables.posts]: {[EPrismaQueryFields.is]: {

@@ -4,7 +4,6 @@ import { UserEntity } from "../entities/user.entity";
 import { EUserDTOFields, UserDTO } from "../dtos/user.dto";
 import { Scope } from "@nestjs/common/interfaces";
 import { ETimeStampTypes, TimeStampService } from "./time-stamp.service";
-import { EDbDates } from "../entities/db.entity";
 
 @Injectable({ scope: Scope.DEFAULT })
 export class UserRepositoryService extends ARepository<UserEntity>{

@@ -16,9 +16,6 @@ export class FeedService {
         return userFeed
     }
     async subscribe(ownerId: TUserId, userId: UserIdDTO): Promise<AddFeedRDO> {
-        if(!mongoose.isValidObjectId(ownerId)) {
-            throw new HttpException(`Unauthorized subscribe request`, HttpStatus.UNAUTHORIZED)
-        }
         const {userId:donorId} = userId
         if(!mongoose.isValidObjectId(donorId)) {
             throw new HttpException(`Could not subscribe user ${ownerId} to user ${donorId}`, HttpStatus.BAD_REQUEST)
@@ -32,9 +29,6 @@ export class FeedService {
         }
     }
     async unsubscribe(ownerId: TUserId, userId: UserIdDTO): Promise<DeleteFeedRDO> {
-        if(!mongoose.isValidObjectId(ownerId)) {
-            throw new HttpException(`Unauthorized unsubscribe request`, HttpStatus.UNAUTHORIZED)
-        }
         const {userId:donorId} = userId
         if(!mongoose.isValidObjectId(donorId)) {
             throw new HttpException(`Could not unsubscribe user ${ownerId} from user ${donorId}`, HttpStatus.BAD_REQUEST)

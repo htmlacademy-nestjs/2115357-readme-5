@@ -1,5 +1,5 @@
-import { Body, Controller, Get, HttpStatus, Param, Patch } from '@nestjs/common';
-import { ChangeUserPasswordRDO, ERouteParams, EUsersRouts, ReturnedUserRDO, UserIdDTO, UserUpdatePasswordDTO } from '@project/libraries/shared';
+import { Body, Controller, Get, HttpStatus, Param, Patch} from '@nestjs/common';
+import { ChangeUserPasswordRDO, ERouteParams, EUsersRouts, Public, ReturnedUserRDO, TUserId, UserIdDTO, UserUpdatePasswordDTO, AuthorizedUserId} from '@project/libraries/shared';
 import { UserService } from './user.service';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ApiParam, } from '@nestjs/swagger';
@@ -9,6 +9,7 @@ import { ApiParam, } from '@nestjs/swagger';
 export class UserController {
     constructor(private readonly userService: UserService){}
     //1.10
+    @Public()
     @Get(`/:${ERouteParams.userId}`)
     @ApiResponse({status: HttpStatus.NOT_FOUND})
     @ApiParam({ type: String, name: ERouteParams.userId, required: true })
@@ -16,12 +17,11 @@ export class UserController {
         return await this.userService.findOne(userId)
     }
     //1.9
-    @Patch(`/:${ERouteParams.userId}`)
-    @ApiParam({ type: String, name: ERouteParams.userId, required: true })
+    @Patch(`/${EUsersRouts.updatePassword}`)
     @ApiResponse({status: HttpStatus.NOT_FOUND})
     @ApiResponse({status: HttpStatus.UNAUTHORIZED})
     @ApiResponse({status: HttpStatus.BAD_GATEWAY})
-    async updatePassword(@Body() data: UserUpdatePasswordDTO, @Param() userId: UserIdDTO): Promise<ChangeUserPasswordRDO> {
+    async updatePassword(@AuthorizedUserId() userId: TUserId, @Body() data: UserUpdatePasswordDTO): Promise<ChangeUserPasswordRDO> {
         return await this.userService.updatePassword(data, userId)
     }
 }

@@ -30,6 +30,8 @@ const appConfig = registerAs('appConfig', (): TConfig => ({
     POSTS_LIST_DEFAULT_LIMIT: +(process.env.POSTS_LIST_DEFAULT_LIMIT as string ?? undefined),
     POSTS_LIST_DEFAULT_OFFSET: +(process.env.POSTS_LIST_DEFAULT_OFFSET as string ?? undefined),
 
+    POSTS_SEARCH_LIMIT: +(process.env.POSTS_SEARCH_LIMIT as string ?? undefined),
+
     COMMENT_TEXT_MIN_LENGTH: +(process.env.COMMENT_TEXT_MIN_LENGTH as string ?? undefined),
     COMMENT_TEXT_MAX_LENGTH: +(process.env.COMMENT_TEXT_MAX_LENGTH as string ?? undefined),
 

@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common/decorators";
+import { Inject, Injectable } from "@nestjs/common/decorators";
 import { EDbDates, EId, EPrismaDbTables } from "../entities/db.entity";
 import { MemoryStoredFile } from "nestjs-form-data";
 import {readFile} from 'node:fs/promises'
@@ -10,6 +10,8 @@ import { Prisma, $Enums } from "@prisma-blog/client";
 import { JsonValue } from "@prisma/client/runtime/library";
 import { TUserId } from "../dtos/user.dto";
 import { EPaginationFields, SortedPaginationDTO } from "../dtos/pagination.dto";
+import { appConfig } from "../configs/app.config";
+import { ConfigType } from "@nestjs/config";
 
 export type TPrismaClientPostsTable = BlogPrismaService[EPrismaDbTables.posts]
 export type TTagsConnectOrCreate = {
@@ -18,7 +20,7 @@ export type TTagsConnectOrCreate = {
         create: { name: string },
     }[]}
 }
-export type TTagsDisconnect = {[EPostDbEntityFields.tags]?: {[EPrismaQueryFields.set]: []}}
+export type TTagsDisconnect = {[EPostDbEntityFields.tags]?: {[EPrismaQueryFields.set]: []}} | {[EPostDbEntityFields.tags]?: {[EPrismaQueryFields.disconnect]: string[]}}
 export type TDbTags = {[EPostDbEntityFields.tags]: {id:string; [EPrismaQueryFields.name]:string}[]}
 export type TPostEntity = {
     [EPostDbEntityFields.postType]: $Enums.EPostType;
@@ -28,24 +30,26 @@ export type TPostEntity = {
 } & (TTagsConnectOrCreate|TTagsDisconnect)
 
 export type TRepostedPost = {
-    authorId: string;
-    type: $Enums.EPostType;
-    originalPostId: TPostId;
-    originalAuthorId: TUserId;
-    body: Prisma.JsonValue;
-    tags: {connect: {id:string,name:string}[]};
+    [EPostDbEntityFields.userId]: string;
+    [EPostDbEntityFields.postType]: $Enums.EPostType;
+    [EPostDbEntityFields.originalPostId]: TPostId;
+    [EPostDbEntityFields.originalAuthorId]: TUserId;
+    [EPostDbEntityFields.postBody]: Prisma.JsonValue;
+    [EPostDbEntityFields.tags]: {connect: {id:string,name:string}[]};
 }
 
 @Injectable()
 export class PostsPrismaRepositoryService extends ABlogPrismaRepository<TPostEntity>{
     #rawClient:TPrismaClientPostsTable
     constructor(
-        protected readonly prismaClient: BlogPrismaService
+        protected readonly prismaClient: BlogPrismaService,
+        @Inject(appConfig.KEY)
+        private readonly _appConfig: ConfigType<typeof appConfig>
     ) {
         super(prismaClient[EPrismaDbTables.posts])
         this.#rawClient = prismaClient[EPrismaDbTables.posts]
     }
-    async preparePost(post: PostDTO, userId: string = ''): Promise<TPostEntity> {
+    async preparePost(post: PostDTO, userId: string = '', isNew = false): Promise<TPostEntity> {
         const _post:TPostEntity = {
             [EPostDbEntityFields.postType]: post[EPostDTOFields.postType],
             [EPostDbEntityFields.postBody]: {},
@@ -64,7 +68,7 @@ export class PostsPrismaRepositoryService extends ABlogPrismaRepository<TPostEnt
                 })
             ]}
         }
-        if(!post[EPostDTOFields.tags]) {
+        if(!post[EPostDTOFields.tags] && !isNew) {
             _post[EPostDTOFields.tags] = {[EPrismaQueryFields.set]: []}
         }
         const body = {} as TPostEntity[EPostDbEntityFields.postBody]
@@ -104,7 +108,10 @@ export class PostsPrismaRepositoryService extends ABlogPrismaRepository<TPostEnt
         const originalPost = await this.prismaClientModel.findUnique({
             [EPrismaQueryFields.where]: {
                 id: postId,
-                rePosted: false
+                rePosted: false,
+                [EPrismaQueryFields.not]: {
+                    [EPostDbEntityFields.userId]: userId,
+                },
             },
             include: { tags: true }
         })
@@ -112,13 +119,13 @@ export class PostsPrismaRepositoryService extends ABlogPrismaRepository<TPostEnt
             return null
         }
         const repostedPost:TRepostedPost = {
-            authorId: userId,
-            type: originalPost.type,
-            originalPostId: originalPost[EId.id] as TPostId,
-            originalAuthorId: originalPost.authorId as unknown as TUserId,
-            body: originalPost.body,
-            tags: {
-                connect: originalPost.tags ?
+            [EPostDbEntityFields.userId]: userId,
+            [EPostDbEntityFields.postType]: originalPost.type,
+            [EPostDbEntityFields.originalPostId]: originalPost[EId.id] as TPostId,
+            [EPostDbEntityFields.originalAuthorId]: originalPost.authorId as unknown as TUserId,
+            [EPostDbEntityFields.postBody]: originalPost.body,
+            [EPostDbEntityFields.tags]: {
+                [EPrismaQueryFields.connect]: originalPost.tags ?
                     (originalPost.tags as unknown as TDbTags[EPostDbEntityFields.tags])?.map((tag) => ({...tag})) :
                     []
             }
@@ -126,7 +133,7 @@ export class PostsPrismaRepositoryService extends ABlogPrismaRepository<TPostEnt
         try {
             const [newRepostedPost, repostedOriginalPost] = await this.prismaClient.$transaction([
                 this.#rawClient.create({
-                    data: {
+                    [EPrismaQueryFields.data]: {
                         ...repostedPost as unknown as Required<Pick<TPostEntity, EPostDbEntityFields.userId>> & TTagsConnectOrCreate & TPostEntity,
                         ...{
                             [EDbDates.createdAt]: new Date(),
@@ -136,9 +143,9 @@ export class PostsPrismaRepositoryService extends ABlogPrismaRepository<TPostEnt
                 }),
                 this.#rawClient.update({
                     [EPrismaQueryFields.where]: {
-                        id: postId as string
+                        [EId.id]: postId as string
                     },
-                    [EPrismaQueryFields.data]: {rePosted: true}
+                    [EPrismaQueryFields.data]: {[EPostDbEntityFields.rePosted]: true}
                 })
             ])
             return newRepostedPost?.id && repostedOriginalPost?.id === postId ? newRepostedPost.id : undefined
@@ -149,11 +156,12 @@ export class PostsPrismaRepositoryService extends ABlogPrismaRepository<TPostEnt
     }
     async getIncludeParameters({keys = [], all = true}: {keys?: EPrismaDbTables[]; all?: boolean}): Promise<Record<string, any>> {
         if(all) {
-            return Object.keys(EPrismaDbTables).reduce((acc, dbTable) => (dbTable !== EPrismaDbTables.posts ? {...acc, [dbTable]:true} : acc), {})
+            return Object.keys(EPrismaDbTables).reduce((acc, dbTable) => (dbTable !== EPrismaDbTables.posts && dbTable !== EPrismaDbTables.feeds ? {...acc, [dbTable]:true} : acc), {})
         }
         return keys.reduce((acc, dbTable) => ({...acc, [dbTable]:true}), {})
     }
-    async getSortedPaginationParameters(options: SortedPaginationDTO): Promise<TPrismaSortedPagination> {
+    async getSortedPaginationParameters(options: SortedPaginationDTO, forComments = false): Promise<TPrismaSortedPagination> {
+        const _default: Partial<{[k in EDbDates]: ESortByOrder.desc}> = !forComments ? {[EDbDates.publishedAt]: ESortByOrder.desc} : {[EDbDates.createdAt]: ESortByOrder.desc}
         const _orderByLikes = options.sort === EPostSortBy.likes ? {
             [EPostSortBy.likes] : {
                 [EPrismaQueryFields._count]: ESortByOrder.desc
@@ -165,21 +173,19 @@ export class PostsPrismaRepositoryService extends ABlogPrismaRepository<TPostEnt
                 [EPrismaQueryFields._count]: ESortByOrder.desc
             },
         } : undefined
-        const _orderByDate: {[EDbDates.publishedAt]: ESortByOrder}|undefined = options.sort === EPostSortBy.date ? {
-            [EDbDates.publishedAt]: ESortByOrder.desc
+        const _orderByDate: typeof _default|undefined = options.sort === EPostSortBy.date ? {
+            [!forComments ? EDbDates.publishedAt : EDbDates.createdAt]: ESortByOrder.desc
         } : undefined
         return {
             [EPrismaSortedPaginationFields.skip]: options[EPaginationFields.offset] ?? undefined,
             [EPrismaSortedPaginationFields.take]: options[EPaginationFields.limit] ? options[EPaginationFields.limit] : undefined,
-            [EPrismaSortedPaginationFields.orderBy]: _orderByLikes || _orderByComments || _orderByDate
+            [EPrismaSortedPaginationFields.orderBy]: _orderByLikes || _orderByComments || _orderByDate || _default
         }
     }
     async getWhereParameters(parameters: Record<string, any> = {}, onlyPublished = true): Promise<TWhereParameters> {
         return {
-            [EPrismaQueryFields.where]: {
-                [EPostDbEntityFields.postState]: onlyPublished ? EPostState.published : undefined,
-                ...parameters,
-            }
+            [EPostDbEntityFields.postState]: onlyPublished ? EPostState.published : undefined,
+            ...parameters,
         }
     }
     async fromJsonBodyTitleFieldRawSearchQuery({search}: {search: string}): Promise<ReturnedPostRDO[]> {
@@ -191,7 +197,7 @@ export class PostsPrismaRepositoryService extends ABlogPrismaRepository<TPostEnt
             to_tsvector(body->'title') @@ to_tsquery(${_search}) AND
                 p."state" = 'published'
             ORDER BY ts_rank(to_tsvector(body->'title'), to_tsquery(${_search})) DESC
-            LIMIT 20
+            LIMIT ${this._appConfig.POSTS_SEARCH_LIMIT}
         ;`
     }
 }

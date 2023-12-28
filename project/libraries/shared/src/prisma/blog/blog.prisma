@@ -49,6 +49,7 @@ model likes {
     postId String
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+    @@unique([authorId, postId], name: "uniqueLike")
 }
 
 model comments {

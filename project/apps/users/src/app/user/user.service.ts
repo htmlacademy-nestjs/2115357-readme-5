@@ -1,11 +1,10 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { ChangeUserPasswordRDO, EUserDTOFields, HashPasswordService, ReturnedUserRDO, UserIdDTO, UserMongoRepositoryService, UserRepositoryService, UserUpdatePasswordDTO } from '@project/libraries/shared';
+import { ChangeUserPasswordRDO, EUserDTOFields, HashPasswordService, ReturnedUserRDO, TUserId, UserIdDTO, UserMongoRepositoryService, UserUpdatePasswordDTO } from '@project/libraries/shared';
 import { UserEntity } from 'libraries/shared/src/entities/user.entity';
 
 @Injectable()
 export class UserService {
     constructor(
-        //private readonly userRepository: UserRepositoryService,
         private readonly userRepository: UserMongoRepositoryService,
         private readonly hashPasswordService: HashPasswordService
     ){}
@@ -17,18 +16,17 @@ export class UserService {
         }
         return await this.userRepository.prepareReturnedUser(user as UserEntity)
     }
-    async updatePassword(data: UserUpdatePasswordDTO, userId: UserIdDTO): Promise<ChangeUserPasswordRDO> {
-        const {userId: id} = userId
-        const user = await this.userRepository.findOne(id)
+    async updatePassword(data: UserUpdatePasswordDTO, userId: TUserId): Promise<ChangeUserPasswordRDO> {
+        const user = await this.userRepository.findOne(userId)
         if(!user) {
-            throw new HttpException(`${id} User not found`, HttpStatus.NOT_FOUND)
+            throw new HttpException(`${userId} User not found`, HttpStatus.NOT_FOUND)
         }
         const validated = user ? await this.hashPasswordService.compare(data.currentPassword, (user as UserEntity)[EUserDTOFields.password]) : false
         if(!validated) {
             throw new HttpException('Bad credentials', HttpStatus.UNAUTHORIZED)
         }
         try {
-            const updated = await this.userRepository.update(id, {[EUserDTOFields.password]: await this.hashPasswordService.hash(data[EUserDTOFields.password])})
+            const updated = await this.userRepository.update(userId, {[EUserDTOFields.password]: await this.hashPasswordService.hash(data[EUserDTOFields.password])})
             return {result: updated}
         } catch(er) {
             console.log(er)

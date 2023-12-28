@@ -9,7 +9,7 @@ import { TCommentId } from "../dtos/comment.dto";
 import { TFeedId } from "../dtos/feed.dto";
 import { TFeedEntity, TPrismaClientFeedsTable } from "../services/feeds-prisma-repository.service";
 
-export type TWhereParameters = {where: Record<string, any>}
+export type TWhereParameters = Record<string, any>
 
 export enum EPrismaQueryFields {
     select = 'select',
@@ -20,8 +20,11 @@ export enum EPrismaQueryFields {
     where = 'where',
     data = 'data',
     create = 'create',
+    connect = 'connect',
     connectOrCreate = 'connectOrCreate',
-    set = 'set'
+    disconnect = 'disconnect',
+    set = 'set',
+    not = 'NOT'
 }
 export enum ESortByOrder {
     desc = 'desc',
@@ -60,7 +63,7 @@ export abstract class ABlogPrismaRepository<T extends
         return await this.prismaClientModel.findMany({
             ...options,
             include: {...include},
-            ...where
+            where: {...where}
         })
     }
     async findOne(id: T[EId.id], include: Record<string, any> = {}): Promise<T & Pick<T, EId.id>|undefined> {
@@ -90,24 +93,31 @@ export abstract class ABlogPrismaRepository<T extends
         })
         return newItemId
     }
-    async update(id: T[EId.id], item: T): Promise<boolean> {
+    async update(id: T[EId.id], item: T, where: TWhereParameters = {}): Promise<boolean> {
         try{
+            console.log(item)
             const _item = {...item, [EDbDates.updatedAt]: new Date()} as Omit<T, EDbDates.createdAt> & {[EDbDates.updatedAt]: Date}
             const updated = await this.prismaClientModel.update({
                 where: {
-                    id: id as string
+                    id: id as string,
+                    ...where
                 },
                 data: _item
             })
             return updated.id === id
         } catch(er) {
-            //console.log(er)
+            console.log(er)
             return false
         }
     }
-    async delete(id: T[EId.id]): Promise<boolean> {
+    async delete(id: T[EId.id], where: TWhereParameters = {}): Promise<boolean> {
         try{
-            const deleted = await this.prismaClientModel.delete({where: {id}})
+            const deleted = await this.prismaClientModel.delete({
+                where: {
+                    id,
+                    ...where
+                },
+            })
             return deleted.id === id
         } catch(er) {
             //console.log(er)

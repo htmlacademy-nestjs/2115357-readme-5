@@ -1,15 +1,14 @@
-import { Controller, Get, HttpStatus, Param, Query, Req } from '@nestjs/common';
-import {Request} from 'express'
-import { CommentsPaginationDTO, EBlogRouts, ERouteParams, PaginationDTO, PostIdDTO, PostKeyphraseDTO, PostTagDTO, PostTypeDTO, ReturnedCommentRDO, ReturnedPostRDO, SortedPaginationDTO, TUserId, UserIdDTO } from '@project/libraries/shared';
+import { Controller, Get, HttpStatus, Param, Query } from '@nestjs/common';
+import { AuthorizedUserId, CommentsPaginationDTO, EBlogRouts, ERouteParams, PostIdDTO, PostKeyphraseDTO, PostTagDTO, PostTypeDTO, Public, ReturnedCommentRDO, ReturnedPostRDO, SortedPaginationDTO, TUserId, UserIdDTO } from '@project/libraries/shared';
 import { InfoService } from './info.service';
 import { ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { getUserId } from '../actions/actions.controller';
 
 @ApiTags(EBlogRouts.info)
 @Controller(EBlogRouts.info)
 export class InfoController {
     constructor(private readonly infoService: InfoService) {}
     //2.14
+    @Public()
     @Get(`${EBlogRouts.posts}/${EBlogRouts.one}/:${ERouteParams.postId}`)
     @ApiResponse({status: HttpStatus.NOT_FOUND})
     @ApiParam({ type: String, name: ERouteParams.postId, required: true })
@@ -23,6 +22,7 @@ export class InfoController {
     -3.6
     -3.7
     */
+    @Public()
     @Get(`${EBlogRouts.posts}`)
     async listPosts(@Query() sortedPagination: SortedPaginationDTO): Promise<ReturnedPostRDO[]> {
         return await this.infoService.listPosts(sortedPagination)
@@ -34,6 +34,7 @@ export class InfoController {
     -3.6
     -3.7
     */
+    @Public()
     @Get(`${EBlogRouts.posts}/${EBlogRouts.user}/:${ERouteParams.userId}`)
     async listUserPosts(
         @Param() userId: UserIdDTO,
@@ -43,17 +44,17 @@ export class InfoController {
     }
     //3.9
     @Get(`${EBlogRouts.posts}/${EBlogRouts.drafts}`)
-    async listUserDrafts(@Req() request: Request, ): Promise<ReturnedPostRDO[]> {
-        /* TO DO pass authorized user id */
-        const userId: TUserId = getUserId(/* request?.cookies?.user_id */'6588b7e00f80df08a6354a9e')
+    async listUserDrafts(@AuthorizedUserId() userId: TUserId): Promise<ReturnedPostRDO[]> {
         return await this.infoService.listUserDrafts(userId)
     }
     //3.8
+    @Public()
     @Get(`${EBlogRouts.posts}/${EBlogRouts.type}/:${ERouteParams.postType}`)
     async listPostsByType(@Param() postType: PostTypeDTO): Promise<ReturnedPostRDO[]> {
         return await this.infoService.listPostsByType(postType)
     }
     //3.11
+    @Public()
     @Get(`${EBlogRouts.posts}/${EBlogRouts.tag}/:${ERouteParams.postTag}`)
     async listPostsByTag(@Param() postTag: PostTagDTO): Promise<ReturnedPostRDO[]> {
         return await this.infoService.listPostsByTag(postTag)
@@ -62,6 +63,7 @@ export class InfoController {
     6.5
     6.6
     */
+    @Public()
     @Get(`${EBlogRouts.comments}/:${ERouteParams.postId}`)
     async listPostComments(
         @Param() postId: PostIdDTO,
@@ -74,6 +76,7 @@ export class InfoController {
     8.2
     8.3
     */
+    @Public()
     @Get(`${EBlogRouts.posts}/${EBlogRouts.search}/:${ERouteParams.keyphrase}`)
     async searchPosts(@Param() keyphrase: PostKeyphraseDTO): Promise<ReturnedPostRDO[]> {
         return await this.infoService.searchPosts(keyphrase)

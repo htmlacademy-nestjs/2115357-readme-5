@@ -2,11 +2,15 @@ export * from './configs/env.config'
 export * from './configs/app.config'
 export * from './configs/mongo-users.config'
 export * from './configs/postgres-blog.config'
+export * from './configs/jwt.config'
+
+export * from './lib/auth.guard'
 
 export * from './lib/routes'
 export * from './lib/route-params'
 export * from './lib/file.validator'
 export * from './lib/make-swagger'
+export * from './lib/temporaryGetUserId'
 
 export * from './services/user-repository.service'
 export * from './services/user-mongo-repository.service'

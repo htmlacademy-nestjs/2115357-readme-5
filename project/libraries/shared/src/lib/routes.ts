@@ -1,7 +1,11 @@
 export enum EGatewayRouts {
     jwt = 'jwt',
     issue = 'issue',
-    validate = 'validate'
+    validate = 'validate',
+    decode = 'decode',
+    cookies = 'cookies',
+    setCookies = 'set',
+    readCookies = 'read',
 }
 
 export enum EUsersRouts {
@@ -9,6 +13,7 @@ export enum EUsersRouts {
     signup = 'signup',
     signin = 'signin',
     user = 'user',
+    updatePassword = 'update-password',
 }
 
 export enum EBlogRouts {

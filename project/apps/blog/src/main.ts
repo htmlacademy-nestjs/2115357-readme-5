@@ -1,14 +1,15 @@
 import cookieParser from 'cookie-parser';
 import { ValidationPipe } from '@nestjs/common'
-import { NestFactory } from '@nestjs/core'
+import { NestFactory, Reflector } from '@nestjs/core'
 import { AppModule } from './app/app.module'
-import { envConfig, makeSwagger } from '@project/libraries/shared'
+import { AuthGuardPassesUserIdToRequest, envConfig, makeSwagger } from '@project/libraries/shared'
 
 const _envConfig = envConfig()
 
 ;(async function () {
     const app = await NestFactory.create(AppModule)
     app.setGlobalPrefix(`${_envConfig.API_PREFIX}`)
+    app.useGlobalGuards(new AuthGuardPassesUserIdToRequest(new Reflector()))
     app.useGlobalPipes(new ValidationPipe({
         whitelist: true,
         forbidNonWhitelisted: true,

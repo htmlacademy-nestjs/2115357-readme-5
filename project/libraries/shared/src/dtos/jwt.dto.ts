@@ -5,5 +5,16 @@ export class JWTDTO {
     @ApiProperty()
     @IsString()
     @IsNotEmpty()
-    readonly jwt: string;
+    readonly token: string;
+}
+
+export class JWTRDO {
+    @ApiProperty()
+    @IsString()
+    @IsNotEmpty()
+    readonly token: string;
+    @ApiProperty()
+    @IsString()
+    @IsNotEmpty()
+    readonly refreshToken: string;
 }
