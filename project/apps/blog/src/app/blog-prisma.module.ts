@@ -1,7 +1,13 @@
 import { Module } from '@nestjs/common';
-import { BlogPrismaService, FeedsPrismaRepositoryService, PostsPrismaRepositoryService, CommentsPrismaRepositoryService, LikesPrismaRepositoryService} from '@project/libraries/shared';
+import { ConfigModule } from '@nestjs/config';
+import { BlogPrismaService, FeedsPrismaRepositoryService, PostsPrismaRepositoryService, CommentsPrismaRepositoryService, LikesPrismaRepositoryService, appConfig} from '@project/libraries/shared';
 
 @Module({
+    imports: [
+        ConfigModule.forRoot({
+            load: [appConfig],
+        })
+    ],
     providers: [BlogPrismaService, PostsPrismaRepositoryService, LikesPrismaRepositoryService, FeedsPrismaRepositoryService, CommentsPrismaRepositoryService],
     exports: [BlogPrismaService, PostsPrismaRepositoryService, LikesPrismaRepositoryService, FeedsPrismaRepositoryService, CommentsPrismaRepositoryService]
 })

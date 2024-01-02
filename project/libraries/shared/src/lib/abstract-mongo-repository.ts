@@ -29,7 +29,7 @@ export abstract class AMongoRepository<T extends DbEntity<TId>> implements IRepo
     async update(id: T[EMongoId._id], item: Partial<T>): Promise<boolean> {
         try{
             const updated = await this.itemSchema.findOneAndUpdate({_id: id}, { $set: {...item}}, {new: true }).exec()
-            return !!(updated?._id.toString() === id)
+            return updated?.[EMongoId._id].toString() === id?.toString()
         } catch(er) {
             console.log(er)
             return false

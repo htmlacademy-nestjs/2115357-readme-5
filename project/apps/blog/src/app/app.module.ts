@@ -4,8 +4,8 @@ import { PostsModule } from './info/info.module';
 import { FeedModule } from './feed/feed.module';
 
 @Module({
-  imports: [ActionsModule, PostsModule, FeedModule],
-  controllers: [],
-  providers: [],
+    imports: [ActionsModule, PostsModule, FeedModule,],
+    controllers: [],
+    providers: [],
 })
 export class AppModule {}

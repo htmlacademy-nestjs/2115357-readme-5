@@ -1,12 +1,11 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { AuthUserRDO, EUserDTOFields, HashPasswordService, TUserId, UserDTO, UserMongoRepositoryService, UserRepositoryService, UserSignInDTO } from '@project/libraries/shared';
+import { AuthUserRDO, EUserDTOFields, HashPasswordService, TUserId, UserDTO, UserMongoRepositoryService, UserSignInDTO } from '@project/libraries/shared';
 import { EId, EMongoId } from 'libraries/shared/src/entities/db.entity';
 import { UserEntity } from 'libraries/shared/src/entities/user.entity';
 
 @Injectable()
 export class AuthService {
     constructor(
-        //private readonly userRepository: UserRepositoryService,
         private readonly userRepository: UserMongoRepositoryService,
         private readonly hashPasswordService: HashPasswordService
     ){}

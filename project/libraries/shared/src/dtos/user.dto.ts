@@ -6,6 +6,7 @@ import {
     IsNotEmpty,
     IsOptional,
     Matches,
+    IsEmail,
   } from 'class-validator';
 import { ApiProperty, PickType} from '@nestjs/swagger';
 import { appConfig } from "../configs/app.config";
@@ -21,7 +22,7 @@ export type TUserId = Types.ObjectId
 
 const _appConfig = appConfig()
 const _mongoUsersConfig = mongoUsersConfig()
-const emailPattern = new RegExp('^[a-zA-Z]+?\.[a-zA-Z]+@[a-zA-Z-]+?\.[a-zA-Z]{2,8}$')
+//const emailPattern = new RegExp('^[a-zA-Z\.?]+@[a-zA-Z-]+?\.[a-zA-Z]{2,8}$')
 
 export enum EUserDTOFields {
     email = 'email',
@@ -33,7 +34,8 @@ export enum EUserDTOFields {
 export class UserDTO {
     @Prop()
     @ApiProperty()
-    @Matches(emailPattern, {message: 'email should be an email'})
+    //@Matches(emailPattern, {message: 'email should be an email'})
+    @IsEmail()
     readonly [EUserDTOFields.email]: string;
 
     @Prop()

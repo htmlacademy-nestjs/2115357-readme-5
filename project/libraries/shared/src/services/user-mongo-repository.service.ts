@@ -27,7 +27,6 @@ export class UserMongoRepositoryService extends AMongoRepository<UserEntity>{
             return null
         }
         const preparedUser:UserEntity = {
-            /* [EMongoId._id]: '', */
             fullName: user.fullName,
             [EUserDTOFields.email]: user[EUserDTOFields.email],
             [EUserDTOFields.password]: user[EUserDTOFields.password]
@@ -45,7 +44,7 @@ export class UserMongoRepositoryService extends AMongoRepository<UserEntity>{
             return `data:${avatar.fileType.mime};base64,${_avatar}`
         } catch(er) {
             console.log(er)
-            throw new HttpException(`Avatar cannot be uploaded`, HttpStatus.BAD_GATEWAY)
+            throw new HttpException(`Failed to upload avatar`, HttpStatus.BAD_GATEWAY)
         }
     }
     async prepareReturnedUser(dbUser: UserEntity): Promise<ReturnedUserRDO> {

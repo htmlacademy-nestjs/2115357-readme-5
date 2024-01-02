@@ -32,7 +32,7 @@ export enum EPostState {
 }
 
 export enum EPostSortBy {
-    date = 'date',
+    date = 'publishedAt',
     likes = 'likes',
     comments = 'comments',
 }

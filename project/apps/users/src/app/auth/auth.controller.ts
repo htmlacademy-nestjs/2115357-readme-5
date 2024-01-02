@@ -1,8 +1,9 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpException, HttpStatus, Post, Res, } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AuthUserRDO, EUsersRouts, TUserId, UserDTO, UserSignInDTO} from '@project/libraries/shared'
+import { AuthUserRDO, EUsersRouts, Public, UserDTO, UserSignInDTO, envConfig as _envConfig, jwtConfig, temporary__FunctionGetAuthorizedUserJwt} from '@project/libraries/shared'
 import { FileSystemStoredFile, FormDataRequest } from 'nestjs-form-data';
 import { ApiConsumes, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {Response} from 'express'
 
 /* 
 1.1
@@ -18,6 +19,7 @@ import { ApiConsumes, ApiResponse, ApiTags } from '@nestjs/swagger';
 @Controller(EUsersRouts.auth)
 export class AuthController {
     constructor(private readonly authService: AuthService){}
+    @Public()
     @Post(EUsersRouts.signup)
     @ApiResponse({status: HttpStatus.CONFLICT})
     @ApiResponse({status: HttpStatus.BAD_GATEWAY})
@@ -26,10 +28,40 @@ export class AuthController {
     async signup(@Body() data: UserDTO): Promise<AuthUserRDO> {
         return await this.authService.signup(data)
     }
+    @Public()
     @Post(EUsersRouts.signin)
     @HttpCode(HttpStatus.OK)
     @ApiResponse({status: HttpStatus.UNAUTHORIZED})
-    async signin(@Body() data: UserSignInDTO): Promise<AuthUserRDO> {
-        return await this.authService.signin(data)
+    async signin(@Res({passthrough: true}) response: Response, @Body() data: UserSignInDTO): Promise<AuthUserRDO> {
+
+
+            /* TO DO move to gateway/cookies */
+            const _jwtConfig = jwtConfig()
+            response.clearCookie(`${_jwtConfig.JWT_COOKIES_NAME}`)
+            /* TO DO move to gateway/cookies */
+
+
+        const userId = await this.authService.signin(data)
+
+
+            /* TO DO move to gateway/cookies */
+                const {token, refreshToken} = await temporary__FunctionGetAuthorizedUserJwt(userId.id) ?? {}
+                if(!token) {
+                    throw new HttpException('Could not authorized', HttpStatus.BAD_GATEWAY)
+                }
+                response.cookie(`${_jwtConfig.JWT_COOKIES_NAME}`, token, {
+                    sameSite: true,
+                    httpOnly: true,
+                    secure: true,
+                })
+                response.cookie(`${_jwtConfig.JWT_REFRESH_COOKIES_NAME}`, refreshToken, {
+                    sameSite: true,
+                    httpOnly: true,
+                    secure: true,
+                })
+            /* TO DO move to gateway/cookies */
+
+
+        return userId
     }
 }

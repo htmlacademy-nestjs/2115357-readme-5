@@ -10,4 +10,5 @@ export enum ERouteParams {
     postTag = 'postTag',
     keyphrase = 'keyphrase',
     jwt = 'jwt',
+    token = 'token'
 }
