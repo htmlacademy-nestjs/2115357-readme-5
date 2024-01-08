@@ -1,10 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { JWTDTO, JWTRDO, UserIdDTO, jwtConfig as _jwtConfig} from '@project/libraries/shared';
+import { JWTDTO, JWTRDO, UserIdDTO, jwtConfig as _jwtConfig} from '@shared';
 import {JwtService as _JwtService} from '@nestjs/jwt'
 import { ConfigType } from '@nestjs/config';
 
 @Injectable()
 export class JwtService {
+
     constructor(
         private readonly jwtService: _JwtService,
         @Inject(_jwtConfig.KEY)

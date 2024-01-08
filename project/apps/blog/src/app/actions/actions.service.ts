@@ -1,112 +1,188 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { AddCommentRDO, AddLikeRDO, AddPostRDO, CommentDTO, CommentIdDTO, DeleteCommentRDO, DeleteLikeRDO, DeletePostRDO, EPostDbEntityFields, EPostState, LikeIdDTO, PostDTO, PostIdDTO, PostsPrismaRepositoryService, RePostRDO, RePublishPostDateDTO, ReturnedPostRDO, TCommentId, TLikeId, TPostEntity, TPostId, TTagsConnectOrCreate, TUserId, UpdatePostDTO, UpdatePostRDO} from '@project/libraries/shared';
-import { EId } from 'libraries/shared/src/entities/db.entity';
-import { CommentsPrismaRepositoryService } from 'libraries/shared/src/services/comments-prisma-repository.service';
-import { LikesPrismaRepositoryService } from 'libraries/shared/src/services/likes-prisma-repository.service';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import {ClientProxy} from '@nestjs/microservices';
+import { AddCommentRDO, AddLikeRDO, AddPostRDO, AppError, CommentDTO, CommentIdDTO, CommentsPrismaRepositoryService, DeleteCommentRDO, DeleteLikeRDO, DeletePostRDO, EId, ELoggerMessages, ENotifierQueueFields, EPostDTOFields, EPostDbEntityFields, EPostState, ERmqEvents, LikeIdDTO, LikesPrismaRepositoryService, PostDTO, PostIdDTO, PostsPrismaRepositoryService, RePostRDO, RePublishPostDateDTO, ReturnedPostRDO, TCommentId, TLikeId, TPostEntity, TPostId, TTagsConnectOrCreate, TUserId, UpdatePostDTO, UpdatePostRDO, rmqConfig} from '@shared';
+import {lastValueFrom} from 'rxjs'
 
 @Injectable()
 export class ActionsService {
     constructor(
         private readonly postsPrisma: PostsPrismaRepositoryService,
         private readonly likesPrisma: LikesPrismaRepositoryService,
-        private readonly commentsPrisma: CommentsPrismaRepositoryService
+        private readonly commentsPrisma: CommentsPrismaRepositoryService,
+        @Inject(`${rmqConfig().NOTIFIER_RMQ_NAME}`)
+        private readonly notifierRqmService: ClientProxy
         ){}
-    async addPost(data: PostDTO, userId: TUserId): Promise<AddPostRDO> {
-        const _post = await this.postsPrisma.preparePost(data, `${userId}`, true)
-        const newPostId:TPostId = await this.postsPrisma.save(_post as Required<Pick<TPostEntity, EPostDbEntityFields.userId>> & TTagsConnectOrCreate & TPostEntity)
-        if(!newPostId) {
-            throw new HttpException(`BAD_GATEWAY on add post request`, HttpStatus.BAD_GATEWAY)
+    async #addPostToNotifierQueue(data: PostDTO, newPostId:TPostId, userId: TUserId): Promise<boolean> {
+        try {
+            return await lastValueFrom(this.notifierRqmService.send(ERmqEvents.addPostToQueue, {
+               [ENotifierQueueFields.postId]: newPostId,
+               [ENotifierQueueFields.postType]: data[EPostDTOFields.postType],
+               [ENotifierQueueFields.authorId]: userId,
+            }))
+        } catch (er) {
+            return false
         }
-        return {[EId.id]: newPostId}
+    }
+    async addPost(data: PostDTO, userId: TUserId): Promise<AddPostRDO> {
+        try {
+            const _post = await this.postsPrisma.preparePost(data, `${userId}`, true)
+            const newPostId = await this.postsPrisma.save(_post as Required<Pick<TPostEntity, EPostDbEntityFields.userId>> & TTagsConnectOrCreate & TPostEntity)
+            const addedToNotifierQueue = await this.#addPostToNotifierQueue(data, newPostId, userId)
+            return {[EId.id]: newPostId, notifier: addedToNotifierQueue ? ELoggerMessages.addedToQueue :  ELoggerMessages.willAddToQueue}
+        } catch (error) {
+            throw new AppError({
+                error,
+                responseMessage: ELoggerMessages.couldNotAddPost,
+                payload: {data, userId},
+            })
+        }
     }
     async editPost(data: UpdatePostDTO, postId: PostIdDTO, userId: TUserId): Promise<UpdatePostRDO> {
-        const{postId:id} = postId
-        const _post = await this.postsPrisma.preparePost(data)
-        const _where = await this.postsPrisma.getWhereParameters({[EPostDbEntityFields.userId]: `${userId}`}, false)
-        const updated = await this.postsPrisma.update(id, _post, _where)
-        if(!updated) {
-            throw new HttpException(`Post ${id} was not updated`, HttpStatus.BAD_REQUEST)
+        try {
+            const{postId:id} = postId
+            const _post = await this.postsPrisma.preparePost(data)
+            const _where = await this.postsPrisma.getWhereParameters({[EPostDbEntityFields.userId]: `${userId}`}, false)
+            const updated = await this.postsPrisma.update(id, _post, _where)
+            if(!updated) {
+                throw new HttpException(ELoggerMessages.postWasNotUpdated, HttpStatus.BAD_REQUEST)
+            }
+            return {result: updated}
+        } catch (error) {
+            throw new AppError({
+                error,
+                responseMessage: ELoggerMessages.postWasNotUpdated,
+                payload: {data, postId, userId},
+            })
         }
-        return {result: updated}
     }
     async rePublishPost(data: RePublishPostDateDTO, postId: PostIdDTO, userId: TUserId): Promise<UpdatePostRDO> {
-        const{postId:id} = postId
-        const _post = await this.postsPrisma.prepareRepublishedPost(data) as TPostEntity
-        const _where = await this.postsPrisma.getWhereParameters({[EPostDbEntityFields.userId]: `${userId}`}, false)
-        const updated = await this.postsPrisma.update(id, _post, _where)
-        if(!updated) {
-            throw new HttpException(`Publishing date for Post ${id} was not updated`, HttpStatus.BAD_REQUEST)
+        try {
+            const{postId:id} = postId
+            const _post = await this.postsPrisma.prepareRepublishedPost(data) as TPostEntity
+            const _where = await this.postsPrisma.getWhereParameters({[EPostDbEntityFields.userId]: `${userId}`}, false)
+            const updated = await this.postsPrisma.update(id, _post, _where)
+            if(!updated) {
+                throw new HttpException(ELoggerMessages.postPublishingDateWasNotUpdated, HttpStatus.BAD_REQUEST)
+            }
+            return {result: updated}
+        } catch (error) {
+            throw new AppError({
+                error,
+                responseMessage: ELoggerMessages.postPublishingDateWasNotUpdated,
+                payload: {data, postId, userId},
+            })
         }
-        return {result: updated}
     }
     async deletePost(postId: PostIdDTO, userId: TUserId): Promise<DeletePostRDO> {
-        const{postId:id} = postId
-        const _where = await this.postsPrisma.getWhereParameters({[EPostDbEntityFields.userId]: `${userId}`}, false)
-        const deleted = await this.postsPrisma.delete(id, _where)
-        if(!deleted) {
-            throw new HttpException(`Post ${id} could not be deleted or not found`, HttpStatus.NO_CONTENT)
+        try {
+            const{postId:id} = postId
+            const _where = await this.postsPrisma.getWhereParameters({[EPostDbEntityFields.userId]: `${userId}`}, false)
+            const deleted = await this.postsPrisma.delete(id, _where)
+            if(!deleted) {
+                throw new HttpException(`${ELoggerMessages.couldNotDeletePost} or ${ELoggerMessages.notFound}`, HttpStatus.NO_CONTENT)
+            }
+            return {result: deleted}
+        } catch (error) {
+            throw new AppError({
+                error,
+                responseMessage: `${ELoggerMessages.couldNotDeletePost} or ${ELoggerMessages.notFound}`,
+                payload: {postId, userId},
+            })
         }
-        return {result: deleted}
     }
     async repost(postId: PostIdDTO, userId: TUserId): Promise<RePostRDO> {
-        const{postId:id} = postId
-        const newRepostedPostId = await this.postsPrisma.repost(id, `${userId}`)
-        if(newRepostedPostId === null) {
-            throw new HttpException(`Post ${id} cannot be reposted by user ${userId}`, HttpStatus.BAD_REQUEST)
+        try {
+            const{postId:id} = postId
+            const newRepostedPostId = await this.postsPrisma.repost(id, `${userId}`)
+            if(!newRepostedPostId) {
+                throw new HttpException(`${ELoggerMessages.couldNotRepostPost} or ${ELoggerMessages.notFound}`, HttpStatus.BAD_REQUEST)
+            }
+            return {[EId.id]: newRepostedPostId}
+        } catch (error) {
+            throw new AppError({
+                error,
+                responseMessage: ELoggerMessages.couldNotRepostPost,
+                payload: {postId, userId},
+            })
         }
-        if(newRepostedPostId === undefined) {
-            throw new HttpException(`Post ${id} cannot be reposted`, HttpStatus.BAD_GATEWAY)
-        }
-        return {[EId.id]: newRepostedPostId}
     }
     async addLike(postId: PostIdDTO, userId: TUserId): Promise<AddLikeRDO> {
-        const{postId:id} = postId
-        const _include = await this.postsPrisma.getIncludeParameters({})
-        const _post = await this.postsPrisma.findOne(id, _include)
-        if(
-            !_post ||
-            (_post as unknown as ReturnedPostRDO)[EPostDbEntityFields.postState] !== EPostState.published ||
-            (_post as unknown as ReturnedPostRDO)[EPostDbEntityFields.likes].find((like) => `${like.authorId}` === `${userId}`)
-        ) {
-            throw new HttpException(`Like for post ${id} by user ${userId} was not added or already exists`, HttpStatus.BAD_REQUEST)
+        try {
+            const{postId:id} = postId
+            const _include = await this.postsPrisma.getIncludeParameters({})
+            const _post = await this.postsPrisma.findOne(id, _include)
+            if(
+                !_post ||
+                (_post as unknown as ReturnedPostRDO)[EPostDbEntityFields.postState] !== EPostState.published ||
+                (_post as unknown as ReturnedPostRDO)[EPostDbEntityFields.likes].find((like) => `${like.authorId}` === `${userId}`)
+            ) {
+                throw new HttpException(ELoggerMessages.couldNotAddLike, HttpStatus.BAD_REQUEST)
+            }
+            const _like = await this.likesPrisma.prepareLike(id, userId)
+            const newLikeId = await this.likesPrisma.save(_like) as TLikeId
+            if(!newLikeId) {
+                throw new HttpException(ELoggerMessages.alreadyExists, HttpStatus.BAD_GATEWAY)
+            }
+            return {[EId.id]: newLikeId}
+        } catch (error) {
+            throw new AppError({
+                error,
+                responseMessage: ELoggerMessages.couldNotAddLike,
+                payload: {postId, userId},
+            })
         }
-        const _like = await this.likesPrisma.prepareLike(id, userId)
-        const newLikeId = await this.likesPrisma.save(_like) as TLikeId
-        if(!newLikeId) {
-            throw new HttpException(`Like for post ${id} by user ${userId} was not added`, HttpStatus.BAD_GATEWAY)
-        }
-        return {[EId.id]: newLikeId}
     }
     async deleteLike(likeId: LikeIdDTO, userId: TUserId): Promise<DeleteLikeRDO> {
-        const{likeId:id} = likeId
-        const _where = await this.postsPrisma.getWhereParameters({[EPostDbEntityFields.userId]: `${userId}`}, false)
-        const deleted = await this.likesPrisma.delete(id, _where)
-        if(!deleted) {
-            throw new HttpException(`Like ${id} could not be deleted or not found`, HttpStatus.NO_CONTENT)
+        try {
+            const{likeId:id} = likeId
+            const _where = await this.postsPrisma.getWhereParameters({[EPostDbEntityFields.userId]: `${userId}`}, false)
+            const deleted = await this.likesPrisma.delete(id, _where)
+            if(!deleted) {
+                throw new HttpException(`${ELoggerMessages.couldNotDeleteLike} ${ELoggerMessages.notFound}`, HttpStatus.NO_CONTENT)
+            }
+            return {result: deleted}
+        } catch (error) {
+            throw new AppError({
+                error,
+                responseMessage: ELoggerMessages.couldNotDeleteLike,
+                payload: {likeId, userId},
+            })
         }
-        return {result: deleted}
     }
     async addComment(data: CommentDTO, postId: PostIdDTO, userId: TUserId): Promise<AddCommentRDO> {
-        const{postId:id} = postId
-        const _post = await this.postsPrisma.findOne(id)
-        if(!_post) {
-            throw new HttpException(`Comment for post ${id} by user ${userId} was not added`, HttpStatus.BAD_REQUEST)
+        try {
+            const{postId:id} = postId
+            const _post = await this.postsPrisma.findOne(id)
+            if(!_post) {
+                throw new HttpException(ELoggerMessages.couldNotAddComment, HttpStatus.BAD_REQUEST)
+            }
+            const{text:comment} = data
+            const _comment = await this.commentsPrisma.prepareComment(comment, id, userId)
+            const newCommentId = await this.commentsPrisma.save(_comment) as TCommentId
+            return {[EId.id]: newCommentId}
+        } catch (error) {
+            throw new AppError({
+                error,
+                responseMessage: ELoggerMessages.couldNotAddComment,
+                payload: {data, postId, userId},
+            })
         }
-        const{text:comment} = data
-        const _comment = await this.commentsPrisma.prepareComment(comment, id, userId)
-        const newCommentId = await this.commentsPrisma.save(_comment) as TCommentId
-        if(!newCommentId) {
-            throw new HttpException(`Comment for post ${id} by user ${userId} was not added`, HttpStatus.BAD_GATEWAY)
-        }
-        return {[EId.id]: newCommentId}
     }
     async deleteComment(commentId: CommentIdDTO, userId: TUserId): Promise<DeleteCommentRDO> {
-        const{commentId:id} = commentId
-        const _where = await this.postsPrisma.getWhereParameters({[EPostDbEntityFields.userId]: `${userId}`}, false)
-        const deleted = await this.commentsPrisma.delete(id, _where)
-        if(!deleted) {
-            throw new HttpException(`Comment ${id} could not be deleted or not found`, HttpStatus.NO_CONTENT)
+        try {
+            const{commentId:id} = commentId
+            const _where = await this.postsPrisma.getWhereParameters({[EPostDbEntityFields.userId]: `${userId}`}, false)
+            const deleted = await this.commentsPrisma.delete(id, _where)
+            if(!deleted) {
+                throw new HttpException(`${ELoggerMessages.couldNotDeleteComment} or ${ELoggerMessages.notFound}`, HttpStatus.NO_CONTENT)
+            }
+            return {result: deleted}
+        } catch (error) {
+            throw new AppError({
+                error,
+                responseMessage: ELoggerMessages.couldNotDeleteComment,
+                payload: {commentId, userId},
+            })
         }
-        return {result: deleted}
     }
 }

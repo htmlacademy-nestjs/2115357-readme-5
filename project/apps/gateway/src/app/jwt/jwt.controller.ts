@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { EGatewayRouts, ERouteParams, JWTDTO, UserIdDTO } from '@project/libraries/shared';
+import { EGatewayRouts, ERouteParams, JWTDTO, UserIdDTO } from '@shared';
 import { JwtService } from './jwt.service';
 
 @Controller(EGatewayRouts.jwt)

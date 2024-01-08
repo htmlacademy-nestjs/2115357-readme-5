@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { CookiesController } from './cookies.controller';
 import { ConfigModule } from '@nestjs/config';
-import { jwtConfig } from '@project/libraries/shared';
+import { jwtConfig } from '@shared';
 
 @Module({
     imports: [

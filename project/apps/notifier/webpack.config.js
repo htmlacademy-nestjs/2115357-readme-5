@@ -1,8 +1,19 @@
-const { composePlugins, withNx } = require('@nx/webpack');
+const { composePlugins, withNx } = require('@nx/webpack')
+const path = require('path')
+const { merge } = require('webpack-merge')
 
-// Nx plugins for webpack.
-module.exports = composePlugins(withNx(), (config) => {
-  // Update the webpack config as needed here.
-  // e.g. `config.plugins.push(new MyPlugin())`
-  return config;
-});
+module.exports = composePlugins(withNx({target: 'node',}), (config, ctx) => {
+    return merge(config, {
+      output: {
+        devtoolModuleFilenameTemplate: (info) => {
+          const rel = path.relative(ctx.context.cwd, info.absoluteResourcePath)
+          return `webpack:///data/project/${rel}`
+        },
+      },
+      devtool: 'source-map',
+    },
+    {
+        ignoreWarnings: [/Failed to parse source map/]
+    })
+  },
+)

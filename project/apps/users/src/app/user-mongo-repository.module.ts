@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { UserDTOSchema, UserMongoRepositoryService, UserSchema } from '@project/libraries/shared';
+import { UserDTOSchema, UserMongoRepositoryService, UserSchema } from '@shared';
 import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({

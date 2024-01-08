@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { mongoUsersConfig } from '@project/libraries/shared';
+import { mongoUsersConfig } from '@shared';
 
 const _mongoUsersConfig = mongoUsersConfig()
 

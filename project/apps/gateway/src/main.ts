@@ -1,7 +1,7 @@
 import { ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app/app.module'
-import { envConfig, makeSwagger } from '@project/libraries/shared';
+import { AppError, ELoggerMessages, envConfig, makeSwagger } from '@shared';
 import cookieParser from 'cookie-parser';
 
 const _envConfig = envConfig()
@@ -22,11 +22,15 @@ const _envConfig = envConfig()
         })
         app.use(cookieParser())
         await app.listen(+_envConfig.GATEWAY_API_PORT)
-        console.log('')
-        console.log(`Gateway is running on: http://localhost:${_envConfig.GATEWAY_API_PORT}/${_envConfig.API_PREFIX}`)
-        console.log(`Gateway docs is running on: http://localhost:${_envConfig.GATEWAY_API_PORT}/${_envConfig.API_DOCS_PATH}`)
-        console.log('')
-    }catch(er) {
-        console.log(er)
+        console.info('')
+        console.info(`Gateway is running on: http://localhost:${_envConfig.GATEWAY_API_PORT}/${_envConfig.API_PREFIX}`)
+        console.info(`Gateway docs is running on: http://localhost:${_envConfig.GATEWAY_API_PORT}/${_envConfig.API_DOCS_PATH}`)
+        console.info('')
+    } catch (error) {
+        throw new AppError({
+            error,
+            responseMessage: ELoggerMessages.badGateway,
+            payload: {},
+        })
     }
 })()

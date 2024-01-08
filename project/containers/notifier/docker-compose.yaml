@@ -1,0 +1,43 @@
+services:
+
+  notifier-mongo:
+    container_name: ${NOTIFIER_INITDB_CONTAINER}
+    image: mongo
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: always
+    command: mongod --port ${NOTIFIER_INITDB_PORT}
+    ports:
+      - 127.0.0.1:${NOTIFIER_INITDB_PORT}:${NOTIFIER_INITDB_PORT}
+    environment:
+        MONGO_INITDB_ROOT_USERNAME: $NOTIFIER_INITDB_ROOT_USERNAME
+        MONGO_INITDB_ROOT_PASSWORD: $NOTIFIER_INITDB_ROOT_PASSWORD
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh ${NOTIFIER_INITDB_CONTAINER}:${NOTIFIER_INITDB_PORT}/test --quiet
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 2m
+    networks:
+      - html
+
+  notifier-smtp-server:
+    image: gessnerfl/fake-smtp-server
+    container_name: ${NOTIFIER_SMTP_CONTAINER}
+    hostname: ${NOTIFIER_SMTP_HOSTNAME}
+    restart: always
+    ports:
+      - 127.0.0.1:${NOTIFIER_SMTP_PORT}:${NOTIFIER_SMTP_PORT}
+      - 127.0.0.1:${NOTIFIER_SERVER_PORT}:${NOTIFIER_SERVER_PORT}
+      - 127.0.0.1:${NOTIFIER_MANAGEMENT_SERVER_PORT}:${NOTIFIER_MANAGEMENT_SERVER_PORT}
+    environment:
+      - FAKESMTP_AUTHENTICATION_USERNAME=${NOTIFIER_AUTHENTICATION_USERNAME}
+      - FAKESMTP_AUTHENTICATION_PASSWORD=${NOTIFIER_AUTHENTICATION_PASSWORD}
+    networks:
+      - html
+
+networks:
+  html:
+    external: true
+    name: html

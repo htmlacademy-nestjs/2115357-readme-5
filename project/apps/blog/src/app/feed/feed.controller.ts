@@ -1,5 +1,5 @@
 import { Controller, Delete, Get, HttpStatus, Param, Post, Query} from '@nestjs/common';
-import { AddFeedRDO, AuthorizedUserId, DeleteFeedRDO, EBlogRouts, ERouteParams, ReturnedPostRDO, SortedPaginationDTO, TUserId, UserIdDTO } from '@project/libraries/shared';
+import { AddFeedRDO, AuthorizedUserId, DeleteFeedRDO, EBlogRouts, ERouteParams, ReturnedPostRDO, SortedPaginationDTO, TUserId, UserIdDTO } from '@shared';
 import { FeedService } from './feed.service';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 

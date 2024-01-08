@@ -1,6 +1,6 @@
 import { Body, Controller, HttpCode, HttpException, HttpStatus, Post, Res, } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AuthUserRDO, EUsersRouts, Public, UserDTO, UserSignInDTO, envConfig as _envConfig, jwtConfig, temporary__FunctionGetAuthorizedUserJwt} from '@project/libraries/shared'
+import { AuthUserRDO, ELoggerMessages, EUsersRouts, Public, UserDTO, UserSignInDTO, envConfig as _envConfig, jwtConfig, temporary__FunctionGetAuthorizedUserJwt} from '@shared'
 import { FileSystemStoredFile, FormDataRequest } from 'nestjs-form-data';
 import { ApiConsumes, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {Response} from 'express'
@@ -47,17 +47,17 @@ export class AuthController {
             /* TO DO move to gateway/cookies */
                 const {token, refreshToken} = await temporary__FunctionGetAuthorizedUserJwt(userId.id) ?? {}
                 if(!token) {
-                    throw new HttpException('Could not authorized', HttpStatus.BAD_GATEWAY)
+                    throw new HttpException(ELoggerMessages.couldNotAuthorize, HttpStatus.UNAUTHORIZED)
                 }
                 response.cookie(`${_jwtConfig.JWT_COOKIES_NAME}`, token, {
                     sameSite: true,
                     httpOnly: true,
-                    secure: true,
+                    secure: false,
                 })
                 response.cookie(`${_jwtConfig.JWT_REFRESH_COOKIES_NAME}`, refreshToken, {
                     sameSite: true,
                     httpOnly: true,
-                    secure: true,
+                    secure: false,
                 })
             /* TO DO move to gateway/cookies */
 

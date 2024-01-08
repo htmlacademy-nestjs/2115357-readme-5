@@ -1,5 +1,5 @@
 import { Body, Controller, Inject, Post, Req, Res } from '@nestjs/common';
-import { EGatewayRouts, JWTDTO, jwtConfig as _jwtConfig} from '@project/libraries/shared';
+import { EGatewayRouts, JWTDTO, jwtConfig as _jwtConfig} from '@shared';
 import {Response, Request} from 'express'
 import { ConfigType } from '@nestjs/config';
 import { ApiExcludeController} from '@nestjs/swagger';

@@ -15,7 +15,6 @@
         "main": "apps/blog/src/main.ts",
         "tsConfig": "apps/blog/tsconfig.app.json",
         "assets": ["apps/blog/src/assets"],
-        "isolatedConfig": true,
         "webpackConfig": "apps/blog/webpack.config.js",
         "tsPlugins": [
             {
