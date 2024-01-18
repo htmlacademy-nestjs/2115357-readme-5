@@ -15,7 +15,6 @@
         "main": "apps/gateway/src/main.ts",
         "tsConfig": "apps/gateway/tsconfig.app.json",
         "assets": ["apps/gateway/src/assets"],
-        "isolatedConfig": true,
         "webpackConfig": "apps/gateway/webpack.config.js",
         "tsPlugins": [
             {

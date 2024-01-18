@@ -1,8 +1,8 @@
 import { Body, Controller, Delete, HttpCode, HttpStatus, Param, Post, Put } from '@nestjs/common';
-import { AddCommentRDO, AddPostRDO, AuthorizedUserId, CommentDTO, CommentIdDTO, DeleteCommentRDO, DeleteLikeRDO, DeletePostRDO, EBlogRouts, ERouteParams, LikeIdDTO, PostDTO, PostIdDTO, RePostRDO, RePublishPostDateDTO, TUserId, UpdatePostDTO, UpdatePostRDO } from '@project/libraries/shared';
+import { AddCommentRDO, AddPostRDO, AuthorizedUserId, CommentDTO, CommentIdDTO, DeleteCommentRDO, DeleteLikeRDO, DeletePostRDO, EBlogRouts, ERouteParams, LikeIdDTO, PostDTO, PostIdDTO, RePostRDO, RePublishPostDateDTO, TUserId, UpdatePostDTO, UpdatePostRDO } from '@shared';
 import { ActionsService } from './actions.service';
 import { FileSystemStoredFile, FormDataRequest } from 'nestjs-form-data';
-import { ApiConsumes, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiConsumes, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 @ApiTags(EBlogRouts.actions)
 @Controller(EBlogRouts.actions)
@@ -25,6 +25,7 @@ export class ActionsController {
     @Post(EBlogRouts.post)
     @ApiConsumes('multipart/form-data')
     @ApiResponse({status: HttpStatus.UNAUTHORIZED})
+    @ApiParam({name: ERouteParams.youtubeVideoUrl, description: 'http/https protocol is required'})
     @FormDataRequest({storage: FileSystemStoredFile})
     async addPost(@AuthorizedUserId() userId: TUserId, @Body() data: PostDTO): Promise<AddPostRDO> {
         return await this.actionsService.addPost(data, userId)

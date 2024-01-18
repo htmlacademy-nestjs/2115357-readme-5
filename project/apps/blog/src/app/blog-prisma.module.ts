@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { BlogPrismaService, FeedsPrismaRepositoryService, PostsPrismaRepositoryService, CommentsPrismaRepositoryService, LikesPrismaRepositoryService, appConfig} from '@project/libraries/shared';
+import { BlogPrismaService, FeedsPrismaRepositoryService, PostsPrismaRepositoryService, CommentsPrismaRepositoryService, LikesPrismaRepositoryService, appConfig} from '@shared';
 
 @Module({
     imports: [

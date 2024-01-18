@@ -1,5 +1,5 @@
 import { Controller, Get, HttpStatus, Param, Query } from '@nestjs/common';
-import { AuthorizedUserId, CommentsPaginationDTO, EBlogRouts, ERouteParams, PostIdDTO, PostKeyphraseDTO, PostTagDTO, PostTypeDTO, Public, ReturnedCommentRDO, ReturnedPostRDO, SortedPaginationDTO, TUserId, UserIdDTO } from '@project/libraries/shared';
+import { AuthorizedUserId, CommentsPaginationDTO, EBlogRouts, ERouteParams, PostIdDTO, PostKeyphraseDTO, PostTagDTO, PostTypeDTO, Public, ReturnedCommentRDO, ReturnedPostRDO, SortedPaginationDTO, TUserId, UserIdDTO } from '@shared';
 import { InfoService } from './info.service';
 import { ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 

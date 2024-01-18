@@ -15,7 +15,6 @@
         "main": "apps/users/src/main.ts",
         "tsConfig": "apps/users/tsconfig.app.json",
         "assets": ["apps/users/src/assets"],
-        "isolatedConfig": true,
         "webpackConfig": "apps/users/webpack.config.js",
         "tsPlugins": [
             {
@@ -30,6 +29,10 @@
     },
     "serve": {
       "executor": "@nx/js:node",
+      "sourceMap": {
+        "scripts": true,
+        "vendor": true
+        },
       "defaultConfiguration": "development",
       "options": {
         "port": 46028,
@@ -37,7 +40,7 @@
       },
       "configurations": {
         "development": {
-          "buildTarget": "users:build:development"
+          "buildTarget": "users:build:development --debug"
         },
         "production": {
           "buildTarget": "users:build:production"

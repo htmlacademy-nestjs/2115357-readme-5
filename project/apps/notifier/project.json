@@ -15,7 +15,6 @@
         "main": "apps/notifier/src/main.ts",
         "tsConfig": "apps/notifier/tsconfig.app.json",
         "assets": ["apps/notifier/src/assets"],
-        "isolatedConfig": true,
         "webpackConfig": "apps/notifier/webpack.config.js"
       },
       "configurations": {
