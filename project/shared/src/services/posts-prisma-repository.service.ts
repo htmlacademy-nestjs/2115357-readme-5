@@ -1,18 +1,16 @@
-import { Inject, Injectable } from "@nestjs/common/decorators";
-import { EDbDates, EId, EPrismaDbTables } from "../entities/db.entity";
-import { MemoryStoredFile } from "nestjs-form-data";
+import {Inject, Injectable} from "@nestjs/common/decorators"
+import {EDbDates, EId, EPrismaDbTables} from "../entities/db.entity"
+import {MemoryStoredFile } from "nestjs-form-data"
 import {readFile} from 'node:fs/promises'
-import { ABlogPrismaRepository, EPrismaQueryFields, EPrismaSortedPaginationFields, ESortByOrder, TPrismaSortedPagination, TWhereParameters } from "../lib/abstract-prisma-repository";
-import { BlogPrismaService } from "./blog-prisma.service";
-import { EPostDTOFields, EPostDbEntityFields, EPostSortBy, EPostState, PostDTO, RePublishPostDateDTO, ReturnedPostRDO, TPostId } from "../dtos/post.dto";
-import { Prisma, $Enums } from "@prisma-blog/client";
-import { JsonValue } from "@prisma/client/runtime/library";
-import { TUserId } from "../dtos/user.dto";
-import { EPaginationFields, SortedPaginationDTO } from "../dtos/pagination.dto";
-import { appConfig } from "../configs/app.config";
-import { ConfigType } from "@nestjs/config";
-import {AppError} from '../logger/logger.interceptor';
-import {ELoggerMessages} from '../logger/logger.enum';
+import {ABlogPrismaRepository, EPrismaQueryFields, EPrismaSortedPaginationFields, ESortByOrder, TPrismaSortedPagination, TWhereParameters} from "../lib/abstract-prisma-repository"
+import {BlogPrismaService} from "./blog-prisma.service"
+import {EPostDTOFields, EPostDbEntityFields, EPostSortBy, EPostState, PostDTO, RePublishPostDateDTO, ReturnedPostRDO, TPostId } from "@shared"
+import {Prisma, $Enums} from "@prisma-blog/client"
+import {JsonValue} from "@prisma/client/runtime/library"
+import {EUserDTOFields, TUserId} from "../dtos/user.dto"
+import {EPaginationFields, SortedPaginationDTO} from "../dtos/pagination.dto"
+import {appConfig} from "../configs/app.config"
+import {ConfigType} from "@nestjs/config"
 
 export type TPrismaClientPostsTable = BlogPrismaService[EPrismaDbTables.posts]
 export type TTagsConnectOrCreate = {
@@ -50,17 +48,26 @@ export class PostsPrismaRepositoryService extends ABlogPrismaRepository<TPostEnt
         super(prismaClient[EPrismaDbTables.posts])
         this.#rawClient = prismaClient[EPrismaDbTables.posts]
     }
-    async preparePost(post: PostDTO, userId: string = '', isNew = false): Promise<TPostEntity> {
+    async addPostWithTransaction(post: Required<Pick<TPostEntity, EPostDbEntityFields.userId>> & TTagsConnectOrCreate & TPostEntity, callback: (newPostId: TPostId) => Promise<boolean>) {
+        return await this.prismaClient.$transaction(async (prisma) => {
+            const newPost = await prisma[EPrismaDbTables.posts].create({
+                data: {...post, ...{[EDbDates.createdAt]: new Date(), [EDbDates.updatedAt]: new Date()}}
+            })
+            const addedToQueue = await callback(newPost[EId.id])
+            return {newPostId: newPost[EId.id], addedToQueue}
+        })
+    }
+    async preparePost(post: Omit<PostDTO, EUserDTOFields.fullName>, isNew = false): Promise<TPostEntity> {
         const _post: TPostEntity = {
             [EPostDbEntityFields.postType]: post[EPostDTOFields.postType],
             [EPostDbEntityFields.postBody]: {},
         }
-        if(userId) {
-            _post[EPostDbEntityFields.userId] = userId
+        if(post.userId) {
+            _post[EPostDbEntityFields.userId] = `${post.userId}`
         }
         if(post[EPostDTOFields.tags]) {
             _post[EPostDTOFields.tags] = {
-                [EPrismaQueryFields.set]: userId ? undefined : [],
+                [EPrismaQueryFields.set]: `${post.userId}` ? undefined : [],
                 [EPrismaQueryFields.connectOrCreate]: [...post[EPostDTOFields.tags].map((tag) => {
                     return {
                         [EPrismaQueryFields.where]: { [EPrismaQueryFields.name]: tag },
@@ -74,33 +81,31 @@ export class PostsPrismaRepositoryService extends ABlogPrismaRepository<TPostEnt
         }
         const body = {} as TPostEntity[EPostDbEntityFields.postBody]
         for(const key of Object.keys(post)) {
-            if(key === EPostDTOFields.postType || key === EPostDTOFields.tags) {
+            if(
+                key === EPostDTOFields.postType ||
+                key === EPostDTOFields.tags ||
+                key === EUserDTOFields.userId ||
+                key === EUserDTOFields[EUserDTOFields.fullName] ||
+                key === 'postId'
+            ) {
                 continue
             }
-            if(post[key as keyof PostDTO]) {
+            if(post[key as keyof Omit<PostDTO, EUserDTOFields.fullName>]) {
                 if(key === EPostDTOFields.photo) {
                     body[key] = await this.#preparePhoto(post[key] as MemoryStoredFile)
                     continue
                 }
-                body[key] = post[key as keyof PostDTO] as JsonValue
+                body[key] = post[key as keyof Omit<PostDTO, EUserDTOFields.fullName>] as JsonValue
             }
         }
         _post[EPostDbEntityFields.postBody] = {...body}
         return _post
     }
     async #preparePhoto(photo: MemoryStoredFile): Promise<string> {
-        try {
-            //@ts-ignore
-            const _photo = await readFile(photo.path, 'base64')
-            //@ts-ignore
-            return `data:${photo.fileType.mime};base64,${_photo}`
-        } catch(error) {
-            throw new AppError({
-                error,
-                responseMessage: ELoggerMessages.photoUploadFailure,
-                payload: {photo},
-            })
-        }
+        //@ts-ignore
+        const _photo = await readFile(photo.path, 'base64')
+        //@ts-ignore
+        return `data:${photo.fileType.mime};base64,${_photo}`
     }
     async prepareRepublishedPost(data: RePublishPostDateDTO): Promise<Omit<TPostEntity, EPostDbEntityFields.postType|EPostDbEntityFields.postBody>> {
         const _post:Omit<TPostEntity, EPostDbEntityFields.postType|EPostDbEntityFields.postBody> = {

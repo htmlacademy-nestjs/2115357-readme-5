@@ -2,7 +2,7 @@ services:
 
   users-mongo:
     container_name: ${MONGO_INITDB_CONTAINER}
-    image: mongo
+    image: mongo-users
     build:
       context: ./
       dockerfile: Dockerfile
@@ -25,13 +25,3 @@ networks:
   html:
     external: true
     name: html
-    
-##db.stats()
-##docker exec -it b90e39ed0be8 bash
-##mongosh -u root -p --authenticationDatabase=admin
-##db.getCollection("hhh").count()
-##db.getCollection("hhh").find({name:/.*m.*/})
-##db.getCollection("hhh").findOneAndUpdate({email:'mmm'}, {$set:{web:''}})
-
-##docker exec -it 67b7ba3d565b mongodump --host=localhost --port=46017 --username=root --authenticationDatabase=admin --db=users --gzip --archive=/dump/dump.gz
-##docker cp 67b7ba3d565b:/dump containers/mongo/dump.gz

@@ -3,7 +3,7 @@ import { ActionsController } from './actions.controller';
 import { ActionsService } from './actions.service';
 import { NestjsFormDataModule } from 'nestjs-form-data';
 import { BlogPrismaModule } from '../blog-prisma.module';
-import {RmqModule, rmqConfig} from '@shared';
+import {AppRpcResponse, RmqModule, rmqConfig} from '@shared';
 
 const _rmqConfig = rmqConfig()
 @Module({
@@ -15,6 +15,6 @@ const _rmqConfig = rmqConfig()
         }),
     ],
     controllers: [ActionsController],
-    providers: [ActionsService],
+    providers: [ActionsService, AppRpcResponse],
 })
 export class ActionsModule {}

@@ -1,8 +1,8 @@
-import { Module } from '@nestjs/common';
-import { UserController } from './user.controller';
-import { UserService } from './user.service';
-import { UserMongoRepositoryModule } from '../user-mongo-repository.module';
-import { BcryptService, HashPasswordService, RmqModule, rmqConfig } from '@shared';
+import {Module} from '@nestjs/common'
+import {UserController} from './user.controller'
+import {UserService} from './user.service'
+import {UserMongoRepositoryModule} from '../user-mongo-repository.module'
+import {AppRpcResponse, BcryptService, HashPasswordService, RmqModule, rmqConfig} from '@shared'
 
 const _rmqConfig = rmqConfig()
 
@@ -14,7 +14,7 @@ const _rmqConfig = rmqConfig()
         }),
     ],
     controllers: [UserController],
-    providers: [UserService,
+    providers: [UserService, AppRpcResponse,
         {
             provide: HashPasswordService,
             useClass: BcryptService

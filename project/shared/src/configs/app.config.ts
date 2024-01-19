@@ -2,8 +2,7 @@ import {registerAs} from '@nestjs/config'
 import { convertToBytes } from '../lib/file.validator'
 import { validateConfig } from '../lib/config.validator'
 
-type TConfig = {[k: string] : string|number}
-const appConfig = registerAs('appConfig', (): TConfig => ({
+const _appConfig = Object.freeze({
     USER_NAME_MIN_LENGTH: +(process.env.USER_NAME_MIN_LENGTH as string ?? undefined),
     USER_NAME_MAX_LENGTH: +(process.env.USER_NAME_MAX_LENGTH as string ?? undefined),
     USER_AVATAR_MAX_FILE_SIZE: convertToBytes(+(process.env.USER_AVATAR_MAX_FILE_SIZE as string ?? undefined)),
@@ -37,7 +36,10 @@ const appConfig = registerAs('appConfig', (): TConfig => ({
 
     COMMENTS_LIST_DEFAULT_LIMIT: +(process.env.COMMENTS_LIST_DEFAULT_LIMIT as string ?? undefined),
     COMMENTS_LIST_DEFAULT_OFFSET: +(process.env.COMMENTS_LIST_DEFAULT_OFFSET as string ?? undefined),
-}))
+})
+type TConfig = {[k: string] : string|number}
+
+const appConfig = registerAs('appConfig', (): TConfig => _appConfig)
 
 validateConfig(appConfig())
 

@@ -8,8 +8,6 @@ import { Model } from 'mongoose';
 import { EDbDates, EId, EMongoId, TTimeStampTypes } from "../entities/db.entity";
 import { MemoryStoredFile } from "nestjs-form-data";
 import {readFile} from 'node:fs/promises'
-import {AppError} from '../logger/logger.interceptor';
-import {ELoggerMessages} from '../logger/logger.enum';
 
 @Injectable()
 export class UserMongoRepositoryService extends AMongoRepository<UserEntity>{
@@ -18,13 +16,15 @@ export class UserMongoRepositoryService extends AMongoRepository<UserEntity>{
     ) {
         super(itemSchema)
     }
+    async findUsersByIds(usersIds: TUserId[]): Promise<UserEntity[]> {
+        return await this.itemSchema.find({
+            [EMongoId._id]: {$in: usersIds},
+        }, { __v: 0, [EUserDTOFields.password]: 0}).exec()
+    }
     async findByEmail(email: string): Promise<UserEntity | null> {
         return await this.itemSchema.findOne({email: email}).exec();
     }
-    async prepareUser(user: UserDTO): Promise<UserEntity | null> {
-        if(await this.findByEmail(user[EUserDTOFields.email])) {
-            return null
-        }
+    async prepareUser(user: UserDTO): Promise<UserEntity> {
         const preparedUser:UserEntity = {
             fullName: user.fullName,
             [EUserDTOFields.email]: user[EUserDTOFields.email],
@@ -36,18 +36,10 @@ export class UserMongoRepositoryService extends AMongoRepository<UserEntity>{
         return preparedUser
     }
     async #prepareAvatar(avatar: MemoryStoredFile): Promise<string> {
-        try {
-            //@ts-ignore
-            const _avatar = await readFile(avatar.path, 'base64')
-            //@ts-ignore
-            return `data:${avatar.fileType.mime};base64,${_avatar}`
-        } catch (error) {
-            throw new AppError({
-                error,
-                responseMessage: ELoggerMessages.avatarUploadFailure,
-                payload: avatar,
-            })
-        }
+        //@ts-ignore
+        const _avatar = await readFile(avatar.path, 'base64')
+        //@ts-ignore
+        return `data:${avatar.fileType.mime};base64,${_avatar}`
     }
     async prepareReturnedUser(dbUser: UserEntity): Promise<ReturnedUserRDO> {
         const returnedUser: ReturnedUserRDO = {

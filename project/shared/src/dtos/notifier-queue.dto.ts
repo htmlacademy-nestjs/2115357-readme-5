@@ -54,6 +54,8 @@ export class NotifierQueue {
     readonly [ENotifierQueueFields.authorId]: string;
 
     @Prop()
+    @IsString()
+    @IsNotEmpty()
     readonly [ENotifierQueueFields.authorName]: string;
 
     @Prop()

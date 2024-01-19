@@ -1,8 +1,8 @@
-import { Module } from '@nestjs/common';
-import {HandleQueueService} from './handle-queue-cron.service';
-import {MongooseModule} from '@nestjs/mongoose';
-import {NotifierQueue, NotifierQueueSchema, NotifierSubscriber, NotifierSubscriberSchema, envConfig, notifierConfig} from '@shared';
-import {MailerModule} from '@nestjs-modules/mailer';
+import {Module} from '@nestjs/common'
+import {HandleQueueService} from './handle-queue-cron.service'
+import {MongooseModule} from '@nestjs/mongoose'
+import {NotifierQueue, NotifierQueueSchema, NotifierSubscriber, NotifierSubscriberSchema, envConfig, notifierConfig} from '@shared'
+import {MailerModule} from '@nestjs-modules/mailer'
 
 const _notifierConfig = notifierConfig()
 const _envConfig = envConfig()

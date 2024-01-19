@@ -16,7 +16,7 @@ export class NotifierController {
         private readonly rmqService: RmqService,
         ){}
     @UsePipes(new ValidationPipe({
-        transform: true,
+        transform: false,
         whitelist: true,
         forbidNonWhitelisted: true,
         forbidUnknownValues: true,
@@ -36,12 +36,13 @@ export class NotifierController {
     }
 
     @UsePipes(new ValidationPipe({
-        transform: true,
+        transform: false,
         whitelist: true,
         forbidNonWhitelisted: true,
         forbidUnknownValues: true,
         disableErrorMessages: true,
         exceptionFactory: (errors) => {
+            console.log(errors);
             (new Logger(NotifierController.name)).error(errors)
         }
     }))

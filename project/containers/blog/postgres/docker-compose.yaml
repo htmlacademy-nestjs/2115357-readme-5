@@ -2,9 +2,6 @@ services:
   blog-postgres:
     container_name: ${POSTGRES_INITDB_CONTAINER}
     image: postgres:latest
-    ##build:
-    ##  context: ./
-    ##  dockerfile: Dockerfile
     restart: always
     command: -p ${POSTGRES_INITDB_PORT}
     ports:

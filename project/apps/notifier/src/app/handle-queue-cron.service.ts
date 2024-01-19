@@ -2,7 +2,7 @@ import {Injectable, Logger} from "@nestjs/common"
 import {InjectModel} from '@nestjs/mongoose'
 import {Cron} from "@nestjs/schedule"
 import {EBlogRouts, ENotifierQueueFields, ENotifierSubscriberFields, ESubscriberIntervals, NotifierQueue, NotifierSubscriber, envConfig} from '@shared'
-import {Model, Types} from 'mongoose'
+import {ClientSession, Model, Types} from 'mongoose'
 import {MailerService} from '@nestjs-modules/mailer'
 
 type TSubscriber = NotifierSubscriber & Required<{
@@ -24,6 +24,8 @@ const _envConfig = envConfig()
 const jobPause = 0
 const _wait = (): Promise<boolean> => new Promise((resolve) => setTimeout(() => resolve(true), jobPause))
 
+const errorPause = 5000
+
 const lineBreak = '<br>'
 const cronTimePattern = '*/1 * * * * *'
 
@@ -31,6 +33,7 @@ const cronTimePattern = '*/1 * * * * *'
 export class HandleQueueService {
     #jobStartedAt: number = 0
     #lastNotified: number = 0
+    #session: ClientSession
     private readonly logger = new Logger(HandleQueueService.name)
 
     constructor(
@@ -49,10 +52,6 @@ export class HandleQueueService {
             }
             const posts = await this.#getPosts(subscriber)
             if(!Array.isArray(posts)) {
-                await this.#nextJob()
-                return
-            }
-            if(!await this.#updateSubscriber(subscriber)) {
                 await this.#nextJob()
                 return
             }
@@ -99,37 +98,49 @@ export class HandleQueueService {
             return undefined
         }
     }
-    async #updateSubscriber(subscriber: TSubscriber) {
-        try {
-            return !!(await this.subscriberModel
+    async #updateSubscriber(subscriber: TSubscriber, toDate: number) {
+        await this.subscriberModel
                 .findOneAndUpdate(
                     {
                         [ENotifierSubscriberFields._id]: subscriber[ENotifierSubscriberFields._id],
                     },
                     {
-                        [ENotifierSubscriberFields.nextNotifyAt]: this.#jobStartedAt + subscriber[ENotifierSubscriberFields.interval],
-                    }
+                        [ENotifierSubscriberFields.nextNotifyAt]: toDate + subscriber[ENotifierSubscriberFields.interval],
+                    },
                 )
-                .exec())
-        } catch (error) {
-            this.logger.error((error as Error).message)
-            return undefined
-        }
+                .session(this.#session)
+                .exec()
     }
     async #notifySubscriber(subscriber: TSubscriber, posts: TPosts, toDate: number) {
-        if(!posts.length) {
-            return
+        try {
+            this.#session = await this.subscriberModel.startSession()
+            this.#session.startTransaction()
+            if(!posts.length) {
+                await this.#updateSubscriber(subscriber, toDate)
+                await this.#session.commitTransaction()
+                await this.#session.endSession()
+                return true
+            }
+            const [to, subject, message] = await this.#makeEmail(subscriber, posts, toDate)
+            await this.#updateSubscriber(subscriber, toDate)
+            await this.mailerService
+                .sendMail({
+                    to,
+                    subject,
+                    html: message,
+                })
+            await this.#session.commitTransaction()
+            await this.#session.endSession()
+            return true
+        } catch (error) {
+            this.#jobStartedAt = 1
+            setTimeout(() => {
+                this.#jobStartedAt = 0
+            }, errorPause)
+            this.#session && await this.#session.abortTransaction()
+            this.#session && await this.#session.endSession()
+            this.logger.error((error as Error).message)
         }
-        const [to, subject, message] = await this.#makeEmail(subscriber, posts, toDate)
-        return await this.mailerService
-            .sendMail({
-                to,
-                subject,
-                html: message,
-            })
-            .catch((error) => {
-                this.logger.error((error as Error).message)
-            })
     }
     async #makeEmail(subscriber: TSubscriber, posts: TPosts, toDate: number) {
         const to = `${subscriber[ENotifierSubscriberFields.fullName]} <${subscriber[ENotifierSubscriberFields.email]}>`

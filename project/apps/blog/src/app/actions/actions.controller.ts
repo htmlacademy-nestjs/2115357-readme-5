@@ -1,11 +1,9 @@
-import { Body, Controller, Delete, HttpCode, HttpStatus, Param, Post, Put } from '@nestjs/common';
-import { AddCommentRDO, AddPostRDO, AuthorizedUserId, CommentDTO, CommentIdDTO, DeleteCommentRDO, DeleteLikeRDO, DeletePostRDO, EBlogRouts, ERouteParams, LikeIdDTO, PostDTO, PostIdDTO, RePostRDO, RePublishPostDateDTO, TUserId, UpdatePostDTO, UpdatePostRDO } from '@shared';
-import { ActionsService } from './actions.service';
-import { FileSystemStoredFile, FormDataRequest } from 'nestjs-form-data';
-import { ApiConsumes, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {Body, Controller} from '@nestjs/common'
+import {AddCommentRDO, AddLikeDTO, AddPostRDO, CommentDTO, DeleteCommentDTO, DeleteCommentRDO, DeleteLikeDTO, DeleteLikeRDO, DeletePostDTO, DeletePostRDO, EBlogRouts, PostDTO, RePostDTO, RePostRDO, RePublishPostDateDTO, UpdatePostDTO, UpdatePostRDO} from '@shared'
+import {ActionsService} from './actions.service'
+import {EventPattern} from '@nestjs/microservices'
 
-@ApiTags(EBlogRouts.actions)
-@Controller(EBlogRouts.actions)
+@Controller()
 export class ActionsController {
     constructor(private readonly actionsService: ActionsService) {}
     /*
@@ -22,71 +20,61 @@ export class ActionsController {
     2.11
     2.12?
     */
-    @Post(EBlogRouts.post)
-    @ApiConsumes('multipart/form-data')
-    @ApiResponse({status: HttpStatus.UNAUTHORIZED})
-    @ApiParam({name: ERouteParams.youtubeVideoUrl, description: 'http/https protocol is required'})
-    @FormDataRequest({storage: FileSystemStoredFile})
-    async addPost(@AuthorizedUserId() userId: TUserId, @Body() data: PostDTO): Promise<AddPostRDO> {
-        return await this.actionsService.addPost(data, userId)
+    @EventPattern(EBlogRouts.post)
+    async addPost(@Body() data: PostDTO): Promise<AddPostRDO> {
+        return await this.actionsService.addPost(data)
     }
-    @Put(`${EBlogRouts.post}/:${ERouteParams.postId}`)
-    @ApiConsumes('multipart/form-data')
-    @ApiResponse({status: HttpStatus.BAD_REQUEST})
-    @FormDataRequest({storage: FileSystemStoredFile})
-    async editPost(@AuthorizedUserId() userId: TUserId, @Body() data: UpdatePostDTO, @Param() postId: PostIdDTO): Promise<UpdatePostRDO> {
-        return await this.actionsService.editPost(data, postId, userId)
+
+    @EventPattern(EBlogRouts.updatePost)
+    async editPost(@Body() data: UpdatePostDTO): Promise<UpdatePostRDO> {
+        return await this.actionsService.editPost(data)
     }
-    @Put(`${EBlogRouts.post}/${EBlogRouts.rePublish}/:${ERouteParams.postId}`)
-    @ApiResponse({status: HttpStatus.BAD_REQUEST})
-    async rePublishPost(@AuthorizedUserId() userId: TUserId, @Body() data: RePublishPostDateDTO, @Param() postId: PostIdDTO): Promise<UpdatePostRDO> {
-        return await this.actionsService.rePublishPost(data, postId, userId)
+
+    @EventPattern(EBlogRouts.rePublish)
+    async rePublishPost(@Body() data: RePublishPostDateDTO): Promise<UpdatePostRDO> {
+        return await this.actionsService.rePublishPost(data)
     }
-    @Delete(`${EBlogRouts.post}/:${ERouteParams.postId}`)
-    @HttpCode(HttpStatus.OK)
-    @HttpCode(HttpStatus.NO_CONTENT)
-    @ApiResponse({status: HttpStatus.NO_CONTENT})
-    async delete(@AuthorizedUserId() userId: TUserId, @Param() postId: PostIdDTO): Promise<DeletePostRDO> {
-        return await this.actionsService.deletePost(postId, userId)
+
+    @EventPattern(EBlogRouts.deletePost)
+    async delete(@Body() data: DeletePostDTO): Promise<DeletePostRDO> {
+        return await this.actionsService.deletePost(data)
     }
+
     //2.13
-    @Post(`${EBlogRouts.post}/${EBlogRouts.repost}/:${ERouteParams.postId}`)
-    @ApiResponse({status: HttpStatus.UNAUTHORIZED})
-    @ApiResponse({status: HttpStatus.BAD_REQUEST})
-    @ApiResponse({status: HttpStatus.BAD_GATEWAY})
-    async repost(@AuthorizedUserId() userId: TUserId, @Param() postId: PostIdDTO): Promise<RePostRDO> {
-        return await this.actionsService.repost(postId, userId)
+    @EventPattern(EBlogRouts.repost)
+    async repost(@Body() data: RePostDTO): Promise<RePostRDO> {
+        return await this.actionsService.repost(data)
     }
+
     /*
     5.1
     5.2
     -5.3
     */
-    @Post(`${EBlogRouts.like}/:${ERouteParams.postId}`)
-    @ApiResponse({status: HttpStatus.BAD_REQUEST})
-    @ApiResponse({status: HttpStatus.BAD_GATEWAY})
-    async addLike(@AuthorizedUserId() userId: TUserId, @Param() postId: PostIdDTO) {
-        return await this.actionsService.addLike(postId, userId)
+    @EventPattern(EBlogRouts.like)
+    async addLike(@Body() data: AddLikeDTO) {
+        return await this.actionsService.addLike(data)
     }
+
     //-5.3
-    @Delete(`${EBlogRouts.like}/:${ERouteParams.likeId}`)
-    async deleteLike(@AuthorizedUserId() userId: TUserId, @Param() likeId: LikeIdDTO): Promise<DeleteLikeRDO> {
-        return await this.actionsService.deleteLike(likeId, userId)
+    @EventPattern(EBlogRouts.deleteLike)
+    async deleteLike(@Body() data: DeleteLikeDTO): Promise<DeleteLikeRDO> {
+        return await this.actionsService.deleteLike(data)
     }
+
     /*
     6.1
     6.2
     6.3
     */
-    @Post(`${EBlogRouts.comment}/:${ERouteParams.postId}`)
-    @ApiResponse({status: HttpStatus.BAD_REQUEST})
-    @ApiResponse({status: HttpStatus.BAD_GATEWAY})
-    async addComment(@AuthorizedUserId() userId: TUserId, @Body() data: CommentDTO, @Param() postId: PostIdDTO): Promise<AddCommentRDO> {
-        return await this.actionsService.addComment(data, postId, userId)
+    @EventPattern(EBlogRouts.comment)
+    async addComment(@Body() data: CommentDTO): Promise<AddCommentRDO> {
+        return await this.actionsService.addComment(data)
     }
+
     //6.4
-    @Delete(`${EBlogRouts.comment}/:${ERouteParams.commentId}`)
-    async deleteComment(@AuthorizedUserId() userId: TUserId, @Param() commentId: CommentIdDTO): Promise<DeleteCommentRDO> {
-        return await this.actionsService.deleteComment(commentId, userId)
+    @EventPattern(EBlogRouts.deleteComment)
+    async deleteComment(@Body() data: DeleteCommentDTO): Promise<DeleteCommentRDO> {
+        return await this.actionsService.deleteComment(data)
     }
 }

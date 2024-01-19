@@ -4,9 +4,10 @@ require('dotenv').config({ path: `${notifierEnvPath}/.env` })
 import {registerAs} from '@nestjs/config'
 import { validateConfig } from '../lib/config.validator'
 
-type TConfig = {[k: string] : string|number}
-const notifierConfig = registerAs('notifierConfig', (): TConfig => ({
-    NOTIFIER_INITDB_CONTAINER: process.env.NOTIFIER_INITDB_CONTAINER as string ?? undefined,
+const _notifierConfig = Object.freeze({
+    NOTIFIER_INITDB_CONTAINER1: process.env.NOTIFIER_INITDB_CONTAINER1 as string ?? undefined,
+    NOTIFIER_INITDB_CONTAINER2: process.env.NOTIFIER_INITDB_CONTAINER2 as string ?? undefined,
+    NOTIFIER_INITDB_CONTAINER3: process.env.NOTIFIER_INITDB_CONTAINER3 as string ?? undefined,
     NOTIFIER_DEFAULT_DB_NAME: process.env.NOTIFIER_DEFAULT_DB_NAME as string ?? undefined,
     NOTIFIER_INITDB_ROOT_USERNAME: process.env.NOTIFIER_INITDB_ROOT_USERNAME as string ?? undefined,
     NOTIFIER_INITDB_ROOT_PASSWORD: process.env.NOTIFIER_INITDB_ROOT_PASSWORD as string ?? undefined,
@@ -21,7 +22,10 @@ const notifierConfig = registerAs('notifierConfig', (): TConfig => ({
     NOTIFIER_SMTP_PORT: +(process.env.NOTIFIER_SMTP_PORT as string ?? undefined),
     NOTIFIER_SERVER_PORT: +(process.env.NOTIFIER_SERVER_PORT as string ?? undefined),
     NOTIFIER_MANAGEMENT_SERVER_PORT: +(process.env.NOTIFIER_MANAGEMENT_SERVER_PORT as string ?? undefined),
-}))
+})
+
+type TConfig = {[k: string] : string|number}
+const notifierConfig = registerAs('notifierConfig', (): TConfig => _notifierConfig)
 
 validateConfig(notifierConfig(), notifierEnvPath)
 

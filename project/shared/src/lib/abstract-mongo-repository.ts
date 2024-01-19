@@ -13,7 +13,7 @@ export abstract class AMongoRepository<T extends DbEntity<TId>> implements IRepo
 
     async findAll(): Promise<T[]> {
         return this.itemSchema.aggregate([
-            { $project : { __v : 0, [EUserDTOFields.password]: 0} },
+            {$project: { __v: 0, [EUserDTOFields.password]: 0}},
         ]).exec()
     }
     async findOne(id: T[EMongoId._id]): Promise<TMongoReturnType<T>> {

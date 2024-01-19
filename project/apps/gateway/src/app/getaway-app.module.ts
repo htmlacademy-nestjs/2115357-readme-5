@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from './jwt/jwt.module';
 import { CookiesModule } from './cookies/cookies.module';
+import {GatewayModule} from './gateway/gateway.module';
 
 @Module({
-  imports: [JwtModule, CookiesModule],
+  imports: [GatewayModule, JwtModule, CookiesModule],
   controllers: [],
   providers: [],
 })
-export class AppModule {}
+export class GatewayAppModule {}

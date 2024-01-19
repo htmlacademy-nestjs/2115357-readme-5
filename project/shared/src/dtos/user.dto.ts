@@ -1,4 +1,4 @@
-import type {} from "@nestjs/common";
+import type {} from "@nestjs/common"
 import {
     IsString,
     MaxLength,
@@ -9,17 +9,19 @@ import {
     IsNumber,
     Min,
     Max,
-  } from 'class-validator';
-import { ApiProperty, PickType} from '@nestjs/swagger';
-import { appConfig } from "../configs/app.config";
-import { HasMimeType, IsFile, MaxFileSize, MemoryStoredFile } from "nestjs-form-data";
-import { EAllowedUploadedAvatarMimeTypes } from "../lib/file.validator";
-import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { mongoUsersConfig } from "../configs/mongo-users.config";
+    Validate,
+    IsArray
+  } from 'class-validator'
+import {ApiProperty, PickType} from '@nestjs/swagger'
+import {appConfig} from "../configs/app.config"
+import {Prop, Schema, SchemaFactory} from "@nestjs/mongoose"
+import {mongoUsersConfig} from "../configs/mongo-users.config"
 import {Types} from 'mongoose'
-import { EDbDates, EId, TTimeStampTypes } from "../entities/db.entity";
-import {ENotifierSubscriberFields, ESubscriberIntervals} from './notifier-subscriber.dto';
-import {Transform} from 'class-transformer';
+import {EDbDates, EId, TTimeStampTypes} from "../entities/db.entity"
+import {ESubscriberIntervals} from './notifier-subscriber.dto'
+import {Transform} from 'class-transformer'
+import {MemoryStoredFile} from 'nestjs-form-data'
+import {FileValidator} from '../lib/file.validator'
 
 export type TUserId = Types.ObjectId
 
@@ -31,6 +33,7 @@ export enum EUserDTOFields {
     password = 'password',
     preparedAvatar = 'preparedAvatar',
     fullName = 'fullName',
+    userId = 'userId'
 }
 
 @Schema()
@@ -54,11 +57,9 @@ export class UserDTO {
     @MaxLength(+_appConfig.USER_PASSWORD_MAX_LENGTH)
     readonly [EUserDTOFields.password]: string;
 
-    @ApiProperty({ type: 'string', format: 'binary', required: false })
+    @ApiProperty({type: 'string', format: 'binary', required: false})
     @IsOptional()
-    @IsFile()
-    @MaxFileSize(+_appConfig.USER_AVATAR_MAX_FILE_SIZE)
-    @HasMimeType(Object.values(EAllowedUploadedAvatarMimeTypes))
+    @Validate(FileValidator, [appConfig().USER_AVATAR_MAX_FILE_SIZE])
     readonly avatar?: MemoryStoredFile|undefined;
 }
 
@@ -66,7 +67,7 @@ export class UserIdDTO {
     @ApiProperty({type: String, required: true})
     @IsString()
     @IsNotEmpty()
-    readonly userId: TUserId;
+    readonly [EUserDTOFields.userId]: TUserId;
 }
 
 export class UserSignInDTO extends PickType(UserDTO, [EUserDTOFields.email] as const) {
@@ -81,6 +82,10 @@ export class UserUpdatePasswordDTO extends PickType(UserDTO, [EUserDTOFields.pas
     @IsString()
     @IsNotEmpty()
     readonly currentPassword: string;
+
+    @IsString()
+    @IsNotEmpty()
+    readonly [EUserDTOFields.userId]: TUserId;
 }
 
 declare interface SchemaOptions {
@@ -116,8 +121,10 @@ export class ReturnedUserRDO {
 }
 
 export class AuthUserRDO {
-    @ApiProperty({ type: 'string', required: true })
-    [EId.id]: TUserId;
+    readonly [EId.id]?: TUserId|null;
+    readonly [EUserDTOFields.fullName]?: string;
+    @ApiProperty({type: 'boolean', required: false})
+    readonly result?: boolean
 }
 
 export class ChangeUserPasswordRDO {
@@ -125,19 +132,32 @@ export class ChangeUserPasswordRDO {
     readonly result: boolean
 }
 
-export class SubscribedToPostsDTO {
-    [ENotifierSubscriberFields.email]?: string;
-    [ENotifierSubscriberFields.fullName]?: string;
+export class SubscribeToPostsDTO {
+    @IsString()
+    @IsNotEmpty()
+    readonly [EUserDTOFields.userId]: TUserId;
+
+    @IsString()
+    @IsNotEmpty()
+    readonly [EUserDTOFields.fullName]: string;
 
     @Transform((_this) => Number.isNaN(_this.value) ? null : +_this.value)
-    @ApiProperty({required: false, default: ESubscriberIntervals.minAsDisabled})
     @IsNumber()
     @Min(ESubscriberIntervals.minAsDisabled)
     @Max(ESubscriberIntervals.max)
+    readonly interval: number;
+}
+export class SubscribeToPostsApiDTO {
+    @ApiProperty({type: 'Number', required: true, default: ESubscriberIntervals.minAsDisabled})
     readonly interval: number;
 }
 
 export class SubscribedToPostsRDO {
     @ApiProperty({ type: 'boolean', required: true })
     readonly result: boolean
+}
+
+export class UsersIdsDTO {
+    @IsArray()
+    usersIds: TUserId[]
 }
