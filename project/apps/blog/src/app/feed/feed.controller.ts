@@ -1,10 +1,9 @@
-import { Controller, Delete, Get, HttpStatus, Param, Post, Query} from '@nestjs/common';
-import { AddFeedRDO, AuthorizedUserId, DeleteFeedRDO, EBlogRouts, ERouteParams, ReturnedPostRDO, SortedPaginationDTO, TUserId, UserIdDTO } from '@shared';
-import { FeedService } from './feed.service';
-import { ApiResponse, ApiTags } from '@nestjs/swagger';
+import {Body, Controller} from '@nestjs/common'
+import {AddFeedRDO, DeleteFeedRDO, EBlogRouts, FeedDTO, FeedSubscribeDTO, FeedUnSubscribeDTO, ReturnedPostRDO} from '@shared'
+import {FeedService} from './feed.service'
+import {EventPattern} from '@nestjs/microservices'
 
-@ApiTags(EBlogRouts.feed)
-@Controller(EBlogRouts.feed)
+@Controller()
 export class FeedController {
     constructor(private readonly feedService: FeedService) {}
     /*
@@ -12,29 +11,22 @@ export class FeedController {
     4.3
     4.4
     */
-    @Get()
-    async getUserFeed(@AuthorizedUserId() ownerId: TUserId, @Query() sortedPagination: SortedPaginationDTO): Promise<ReturnedPostRDO[]> {
-        return await this.feedService.getUserFeed(ownerId, sortedPagination)
+    @EventPattern(EBlogRouts.feed)
+    async getUserFeed(@Body() data: FeedDTO): Promise<ReturnedPostRDO[]> {
+        return await this.feedService.getUserFeed(data)
     }
     /*
     4.1
     -4.2
     4.5
     */
-    @Post(`/:${ERouteParams.userId}`)
-    @ApiResponse({status: HttpStatus.UNAUTHORIZED})
-    @ApiResponse({status: HttpStatus.NO_CONTENT})
-    @ApiResponse({status: HttpStatus.BAD_REQUEST})
-    @ApiResponse({status: HttpStatus.BAD_GATEWAY})
-    @ApiResponse({status: HttpStatus.CONFLICT})
-    async subscribe(@AuthorizedUserId() ownerId: TUserId, @Param() userId: UserIdDTO): Promise<AddFeedRDO> {
-        const donorId = userId
-        return await this.feedService.subscribe(ownerId, donorId)
+    @EventPattern(EBlogRouts.feedSubscribe)
+    async subscribe(@Body() data: FeedSubscribeDTO): Promise<AddFeedRDO> {
+        return await this.feedService.subscribe(data)
     }
     //4.6
-    @Delete(`/:${ERouteParams.userId}`)
-    async unsubscribe(@AuthorizedUserId() ownerId: TUserId, @Param() userId: UserIdDTO): Promise<DeleteFeedRDO> {
-        const donorId = userId
-        return await this.feedService.unsubscribe(ownerId, donorId)
+    @EventPattern(EBlogRouts.feedUnSubscribe)
+    async unsubscribe(@Body() data: FeedUnSubscribeDTO): Promise<DeleteFeedRDO> {
+        return await this.feedService.unsubscribe(data)
     }
 }

@@ -1,37 +1,42 @@
-import cookieParser from 'cookie-parser';
-import { ValidationPipe } from '@nestjs/common'
-import { NestFactory, Reflector } from '@nestjs/core'
-import { BlogAppModule } from './app/blog-app.module'
-import { AppError, AuthGuardPassesUserIdToRequest, ELoggerMessages, envConfig, makeSwagger } from '@shared'
+import {HttpStatus, ValidationPipe } from '@nestjs/common'
+import {NestFactory} from '@nestjs/core'
+import {BlogAppModule } from './app/blog-app.module'
+import {AppRpcResponse, envConfig} from '@shared'
+import {RpcException, Transport} from '@nestjs/microservices'
 
 const _envConfig = envConfig()
 
 ;(async function () {
     try {
         const app = await NestFactory.create(BlogAppModule)
-        app.setGlobalPrefix(`${_envConfig.API_PREFIX}`)
-        app.useGlobalGuards(new AuthGuardPassesUserIdToRequest(new Reflector()))
         app.useGlobalPipes(new ValidationPipe({
+            transform: false,
             whitelist: true,
             forbidNonWhitelisted: true,
+            forbidUnknownValues: true,
+            disableErrorMessages: false,
+            exceptionFactory: (errors) =>  new RpcException(
+                (new AppRpcResponse()).makeError({
+                    messages: errors.map((error) => error.constraints),
+                    statusCode: HttpStatus.BAD_REQUEST,
+                }))
         }))
-        makeSwagger(app, {
-            path: `${_envConfig.API_DOCS_PATH}`,
-            title: `${_envConfig.API_DOCS_BLOG_TITLE}`,
-            description: `${_envConfig.API_DOCS_BLOG_DESCRIPTION}`,
-            version: `${_envConfig.API_PREFIX}`,
-        })
-        app.use(cookieParser())
-        await app.listen(+_envConfig.BLOG_API_PORT)
-        console.info('')
-        console.info(`Blog is running on: http://localhost:${_envConfig.BLOG_API_PORT}/${_envConfig.API_PREFIX}`)
-        console.info(`Blog docs is running on: http://localhost:${_envConfig.BLOG_API_PORT}/${_envConfig.API_DOCS_PATH}`)
-        console.info('')
+        app.connectMicroservice({
+            transport: Transport.TCP,
+            options: {
+                port: +_envConfig.BLOG_API_PORT
+            },
+        }, {inheritAppConfig: true})
+        await app.startAllMicroservices()
+
+        setTimeout(() => {
+            console.info('')
+            console.info(`Blog microservice is running on: localhost:${_envConfig.BLOG_API_PORT}`)
+            console.info('')
+        }, 6000)
+
     } catch (error) {
-        throw new AppError({
-            error,
-            responseMessage: ELoggerMessages.badGateway,
-            payload: {},
-        })
+        console.error((error as Error).message)
+        process.exit(1)
     }
 })();

@@ -1,21 +1,44 @@
-import type {} from "@nestjs/common";
-import { IsNotEmpty, IsString, MaxLength, MinLength } from "class-validator";
-import { ApiProperty } from "@nestjs/swagger";
-import { appConfig } from "../configs/app.config";
-import { EDbDates, EId } from "../entities/db.entity";
-import { ECommentDbEntityFields } from "../entities/comment.entity";
-import { TUserId } from "./user.dto";
-import { TPostId } from "./post.dto";
+import type {} from "@nestjs/common"
+import {IsNotEmpty, IsString, MaxLength, MinLength} from "class-validator"
+import {ApiHideProperty, ApiProperty, OmitType} from "@nestjs/swagger"
+import {appConfig} from "../configs/app.config"
+import {EDbDates, EId} from "../entities/db.entity"
+import {ECommentDbEntityFields} from "../entities/comment.entity"
+import {EUserDTOFields, ReturnedUserRDO, TUserId} from "./user.dto"
+import {TPostId} from "./post.dto"
+import {Transform} from 'class-transformer'
+import {EPaginationFields} from './pagination.dto'
 
 export type TCommentId = string
-const envConfig = appConfig()
+const _appConfig = appConfig()
 
 export class CommentDTO {
     @ApiProperty()
     @IsString()
-    @MinLength(+envConfig.COMMENT_TEXT_MIN_LENGTH)
-    @MaxLength(+envConfig.COMMENT_TEXT_MAX_LENGTH)
+    @MinLength(+_appConfig.COMMENT_TEXT_MIN_LENGTH)
+    @MaxLength(+_appConfig.COMMENT_TEXT_MAX_LENGTH)
     readonly text: string;
+
+    @ApiHideProperty()
+    @IsString()
+    @IsNotEmpty()
+    readonly postId: TPostId;
+
+    @ApiHideProperty()
+    @IsString()
+    @IsNotEmpty()
+    readonly [EUserDTOFields.userId]: TUserId;
+}
+export class DeleteCommentDTO {
+
+    @IsString()
+    @IsNotEmpty()
+    readonly commentId: TCommentId;
+
+    @ApiHideProperty()
+    @IsString()
+    @IsNotEmpty()
+    readonly [EUserDTOFields.userId]: TUserId;
 }
 
 export class CommentIdDTO {
@@ -34,6 +57,22 @@ export class DeleteCommentRDO {
     result: boolean
 }
 
+export class CommentsPaginationDTO {
+    @ApiHideProperty()
+    @Transform((_this) => +_appConfig.COMMENTS_LIST_DEFAULT_OFFSET)
+    readonly [EPaginationFields.offset]?: number|undefined
+
+    @ApiHideProperty()
+    @Transform((_this) => +_appConfig.COMMENTS_LIST_DEFAULT_LIMIT)
+    readonly [EPaginationFields.limit]?: number|undefined
+
+    @ApiHideProperty()
+    @IsString()
+    @IsNotEmpty()
+    readonly postId: TPostId;
+}
+
+
 export class ReturnedCommentRDO {
     @ApiProperty({required: true})
     [EId.id]: TCommentId;
@@ -47,4 +86,8 @@ export class ReturnedCommentRDO {
     [EDbDates.createdAt]: string;
     @ApiProperty({required: true})
     [EDbDates.updatedAt]: string;
+}
+
+export class ReturnedHydratedCommentsRDO extends OmitType(ReturnedCommentRDO, [ECommentDbEntityFields.userId]) {
+    ["author"]: null|ReturnedUserRDO;
 }

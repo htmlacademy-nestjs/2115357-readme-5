@@ -1,11 +1,13 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { AppError, CommentsPaginationDTO, CommentsPrismaRepositoryService, ECommentDbEntityFields, ELoggerMessages, EPostDbEntityFields, EPostState, EPrismaDbTables, EPrismaQueryFields, PostIdDTO, PostKeyphraseDTO, PostTagDTO, PostTypeDTO, PostsPrismaRepositoryService, ReturnedCommentRDO, ReturnedPostRDO, SortedPaginationDTO, TUserId, UserIdDTO } from '@shared';
+import {HttpException, HttpStatus, Injectable} from '@nestjs/common'
+import {RpcException} from '@nestjs/microservices'
+import {AppRpcResponse, CommentsPaginationDTO, CommentsPrismaRepositoryService, ECommentDbEntityFields, ELoggerMessages, EPostDbEntityFields, EPostState, EPrismaDbTables, EPrismaQueryFields, PostIdDTO, PostKeyphraseDTO, PostTagDTO, PostTypeDTO, PostsPrismaRepositoryService, ReturnedCommentRDO, ReturnedPostRDO, SortedPaginationDTO, TUserId, UserPostsDTO } from '@shared'
 
 @Injectable()
 export class InfoService {
     constructor(
         private readonly postsPrisma: PostsPrismaRepositoryService,
-        private readonly commentsPrisma: CommentsPrismaRepositoryService
+        private readonly commentsPrisma: CommentsPrismaRepositoryService,
+        private readonly appRpcResponse: AppRpcResponse,
     ){}
     async findOnePost(postId: PostIdDTO): Promise<ReturnedPostRDO> {
         try {
@@ -17,11 +19,12 @@ export class InfoService {
             }
             return result as unknown as ReturnedPostRDO
         } catch (error) {
-            throw new AppError({
-                error,
-                responseMessage: ELoggerMessages.badGateway,
-                payload: {postId},
-            })
+            throw new RpcException(
+                this.appRpcResponse.makeError({
+                    responseMessage: ELoggerMessages.badGateway,
+                    statusCode: HttpStatus.BAD_GATEWAY,
+                    originalError: error
+            }))
         }
     }
     async listPosts(sortedPagination: SortedPaginationDTO): Promise<ReturnedPostRDO[]> {
@@ -35,18 +38,19 @@ export class InfoService {
                 where: _whereParameters,
             })
         } catch (error) {
-            throw new AppError({
-                error,
-                responseMessage: ELoggerMessages.badGateway,
-                payload: {sortedPagination},
-            })
+            throw new RpcException(
+                this.appRpcResponse.makeError({
+                    responseMessage: ELoggerMessages.badGateway,
+                    statusCode: HttpStatus.BAD_GATEWAY,
+                    originalError: error
+            }))
         }
     }
-    async listUserPosts(userId: UserIdDTO, sortedPagination: SortedPaginationDTO): Promise<ReturnedPostRDO[]> {
+    async listUserPosts(data: UserPostsDTO): Promise<ReturnedPostRDO[]> {
         try {
-            const {userId:id} = userId
+            const {userId:id} = data
             const _includeParameters = await this.postsPrisma.getIncludeParameters({})
-            const _sortedPaginationParameters = await this.postsPrisma.getSortedPaginationParameters(sortedPagination)
+            const _sortedPaginationParameters = await this.postsPrisma.getSortedPaginationParameters(data)
             const _whereParameters = await this.postsPrisma.getWhereParameters({
                 [EPostDbEntityFields.userId]: id
             })
@@ -56,11 +60,12 @@ export class InfoService {
                 where: _whereParameters,
             })
         } catch (error) {
-            throw new AppError({
-                error,
-                responseMessage: ELoggerMessages.badGateway,
-                payload: {userId, sortedPagination},
-            })
+            throw new RpcException(
+                this.appRpcResponse.makeError({
+                    responseMessage: ELoggerMessages.badGateway,
+                    statusCode: HttpStatus.BAD_GATEWAY,
+                    originalError: error
+            }))
         }
     }
     async listUserDrafts(userId: TUserId): Promise<ReturnedPostRDO[]> {
@@ -75,11 +80,12 @@ export class InfoService {
                 where: _whereParameters,
             })
         } catch (error) {
-            throw new AppError({
-                error,
-                responseMessage: ELoggerMessages.badGateway,
-                payload: {userId},
-            })
+            throw new RpcException(
+                this.appRpcResponse.makeError({
+                    responseMessage: ELoggerMessages.badGateway,
+                    statusCode: HttpStatus.BAD_GATEWAY,
+                    originalError: error
+            }))
         }
     }
     async listPostsByType(postType: PostTypeDTO): Promise<ReturnedPostRDO[]> {
@@ -94,11 +100,12 @@ export class InfoService {
                 where: _whereParameters,
             })
         } catch (error) {
-            throw new AppError({
-                error,
-                responseMessage: ELoggerMessages.badGateway,
-                payload: {postType},
-            })
+            throw new RpcException(
+                this.appRpcResponse.makeError({
+                    responseMessage: ELoggerMessages.badGateway,
+                    statusCode: HttpStatus.BAD_GATEWAY,
+                    originalError: error
+            }))
         }
     }
     async listPostsByTag(postTag: PostTagDTO): Promise<ReturnedPostRDO[]> {
@@ -117,17 +124,18 @@ export class InfoService {
                 where: _whereParameters,
             })
         } catch (error) {
-            throw new AppError({
-                error,
-                responseMessage: ELoggerMessages.badGateway,
-                payload: {postTag},
-            })
+            throw new RpcException(
+                this.appRpcResponse.makeError({
+                    responseMessage: ELoggerMessages.badGateway,
+                    statusCode: HttpStatus.BAD_GATEWAY,
+                    originalError: error
+            }))
         }
     }
-    async listPostComments(postId: PostIdDTO, pagination: CommentsPaginationDTO): Promise<ReturnedCommentRDO[]> {
+    async listPostComments(data: CommentsPaginationDTO): Promise<ReturnedCommentRDO[]> {
         try {
-            const {postId:id} = postId
-            const _sortedPaginationParameters = await this.postsPrisma.getSortedPaginationParameters(pagination, true)
+            const {postId:id} = data
+            const _sortedPaginationParameters = await this.postsPrisma.getSortedPaginationParameters(data, true)
             const _whereParameters = await this.postsPrisma.getWhereParameters({
                 [ECommentDbEntityFields.postId]: id,
                 [EPrismaDbTables.posts]: {[EPrismaQueryFields.is]: {
@@ -140,11 +148,12 @@ export class InfoService {
                 where: _whereParameters,
             })
         } catch (error) {
-            throw new AppError({
-                error,
-                responseMessage: ELoggerMessages.badGateway,
-                payload: {postId, pagination},
-            })
+            throw new RpcException(
+                this.appRpcResponse.makeError({
+                    responseMessage: ELoggerMessages.badGateway,
+                    statusCode: HttpStatus.BAD_GATEWAY,
+                    originalError: error
+            }))
         }
     }
     async searchPosts(keyphrase: PostKeyphraseDTO): Promise<ReturnedPostRDO[]> {
@@ -152,11 +161,12 @@ export class InfoService {
             const{keyphrase:text} = keyphrase
             return await this.postsPrisma.fromJsonBodyTitleFieldRawSearchQuery({search: text})
         } catch (error) {
-            throw new AppError({
-                error,
-                responseMessage: ELoggerMessages.badGateway,
-                payload: {keyphrase},
-            })
+            throw new RpcException(
+                this.appRpcResponse.makeError({
+                    responseMessage: ELoggerMessages.badGateway,
+                    statusCode: HttpStatus.BAD_GATEWAY,
+                    originalError: error
+            }))
         }
     }
 }

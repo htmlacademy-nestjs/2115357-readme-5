@@ -1,20 +1,18 @@
-import { Controller, Get, HttpStatus, Param, Query } from '@nestjs/common';
-import { AuthorizedUserId, CommentsPaginationDTO, EBlogRouts, ERouteParams, PostIdDTO, PostKeyphraseDTO, PostTagDTO, PostTypeDTO, Public, ReturnedCommentRDO, ReturnedPostRDO, SortedPaginationDTO, TUserId, UserIdDTO } from '@shared';
-import { InfoService } from './info.service';
-import { ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {Body, Controller} from '@nestjs/common'
+import {CommentsPaginationDTO, EBlogRouts, PostIdDTO, PostKeyphraseDTO, PostTagDTO, PostTypeDTO, ReturnedCommentRDO, ReturnedPostRDO, SortedPaginationDTO, TUserId, UserPostsDTO} from '@shared'
+import {InfoService} from './info.service'
+import {EventPattern} from '@nestjs/microservices'
 
-@ApiTags(EBlogRouts.info)
-@Controller(EBlogRouts.info)
+@Controller()
 export class InfoController {
     constructor(private readonly infoService: InfoService) {}
+
     //2.14
-    @Public()
-    @Get(`${EBlogRouts.posts}/${EBlogRouts.one}/:${ERouteParams.postId}`)
-    @ApiResponse({status: HttpStatus.NOT_FOUND})
-    @ApiParam({ type: String, name: ERouteParams.postId, required: true })
-    async findOnePost(@Param() postId: PostIdDTO): Promise<ReturnedPostRDO> {
-        return await this.infoService.findOnePost(postId)
+    @EventPattern(EBlogRouts.one)
+    async findOnePost(@Body() data: PostIdDTO): Promise<ReturnedPostRDO> {
+        return await this.infoService.findOnePost(data)
     }
+
     /*
     3.1
     3.2
@@ -22,11 +20,11 @@ export class InfoController {
     -3.6
     -3.7
     */
-    @Public()
-    @Get(`${EBlogRouts.posts}`)
-    async listPosts(@Query() sortedPagination: SortedPaginationDTO): Promise<ReturnedPostRDO[]> {
-        return await this.infoService.listPosts(sortedPagination)
+    @EventPattern(EBlogRouts.posts)
+    async listPosts(@Body() data: SortedPaginationDTO): Promise<ReturnedPostRDO[]> {
+        return await this.infoService.listPosts(data)
     }
+
     /*
     3.3
     -3.4
@@ -34,51 +32,45 @@ export class InfoController {
     -3.6
     -3.7
     */
-    @Public()
-    @Get(`${EBlogRouts.posts}/${EBlogRouts.user}/:${ERouteParams.userId}`)
-    async listUserPosts(
-        @Param() userId: UserIdDTO,
-        @Query() sortedPagination: SortedPaginationDTO
-    ): Promise<ReturnedPostRDO[]> {
-        return await this.infoService.listUserPosts(userId, sortedPagination)
+    @EventPattern(EBlogRouts.userPosts)
+    async listUserPosts(@Body() data: UserPostsDTO): Promise<ReturnedPostRDO[]> {
+        return await this.infoService.listUserPosts(data)
     }
+
     //3.9
-    @Get(`${EBlogRouts.posts}/${EBlogRouts.drafts}`)
-    async listUserDrafts(@AuthorizedUserId() userId: TUserId): Promise<ReturnedPostRDO[]> {
-        return await this.infoService.listUserDrafts(userId)
+    @EventPattern(EBlogRouts.drafts)
+    async listUserDrafts(@Body() data: TUserId): Promise<ReturnedPostRDO[]> {
+        return await this.infoService.listUserDrafts(data)
     }
+
     //3.8
-    @Public()
-    @Get(`${EBlogRouts.posts}/${EBlogRouts.type}/:${ERouteParams.postType}`)
-    async listPostsByType(@Param() postType: PostTypeDTO): Promise<ReturnedPostRDO[]> {
+    @EventPattern(EBlogRouts.type)
+    async listPostsByType(@Body() postType: PostTypeDTO): Promise<ReturnedPostRDO[]> {
         return await this.infoService.listPostsByType(postType)
     }
+
     //3.11
-    @Public()
-    @Get(`${EBlogRouts.posts}/${EBlogRouts.tag}/:${ERouteParams.postTag}`)
-    async listPostsByTag(@Param() postTag: PostTagDTO): Promise<ReturnedPostRDO[]> {
+    @EventPattern(EBlogRouts.tag)
+    async listPostsByTag(@Body() postTag: PostTagDTO): Promise<ReturnedPostRDO[]> {
         return await this.infoService.listPostsByTag(postTag)
     }
+
     /*
     6.5
     6.6
     */
-    @Public()
-    @Get(`${EBlogRouts.comments}/:${ERouteParams.postId}`)
-    async listPostComments(
-        @Param() postId: PostIdDTO,
-        @Query() pagination: CommentsPaginationDTO
-    ): Promise<ReturnedCommentRDO[]> {
-        return await this.infoService.listPostComments(postId, pagination)
+    @EventPattern(EBlogRouts.comments)
+    async listPostComments(@Body() data: CommentsPaginationDTO): Promise<ReturnedCommentRDO[]> {
+        return await this.infoService.listPostComments(data)
     }
+
     /*
     8.1
     8.2
     8.3
     */
-    @Public()
-    @Get(`${EBlogRouts.posts}/${EBlogRouts.search}/:${ERouteParams.keyphrase}`)
-    async searchPosts(@Param() keyphrase: PostKeyphraseDTO): Promise<ReturnedPostRDO[]> {
+    @EventPattern(EBlogRouts.search)
+    async searchPosts(@Body() keyphrase: PostKeyphraseDTO): Promise<ReturnedPostRDO[]> {
         return await this.infoService.searchPosts(keyphrase)
     }
 }

@@ -1,7 +1,7 @@
 import {Injectable, Logger} from '@nestjs/common'
-import {ENotifierQueueFields, ENotifierSubscriberFields, NotifierQueue, NotifierQueueDTO, NotifierSubscriber, NotifierSubscriberDTO, ReturnedUserRDO, temporary__FunctionGetAuthorizedUserNameForNotifier} from '@shared';
-import {InjectModel} from '@nestjs/mongoose';
-import {Model} from 'mongoose';
+import {ENotifierQueueFields, ENotifierSubscriberFields, NotifierQueue, NotifierQueueDTO, NotifierSubscriber, NotifierSubscriberDTO} from '@shared'
+import {InjectModel} from '@nestjs/mongoose'
+import {Model} from 'mongoose'
 
 const secondsToMillisecondsMultiplier = 1000
 
@@ -28,8 +28,8 @@ export class NotifierService {
                 {runValidators: true, context: 'query', new: true, upsert: true},
             )
             interval ?
-                this.logger.debug(`Subscribed ${ENotifierSubscriberFields.email} with ${interval}ms interval`) :
-                this.logger.debug(`UnSubscribed ${ENotifierSubscriberFields.email}`)
+                this.logger.debug(`Subscribed ${data[ENotifierSubscriberFields.email]} with ${interval}ms interval`) :
+                this.logger.debug(`UnSubscribed ${data[ENotifierSubscriberFields.email]}`)
             return true
         } catch (error) {
             this.logger.error((error as Error).message)
@@ -38,12 +38,8 @@ export class NotifierService {
     }
     async addPostToQueue(data: NotifierQueueDTO): Promise<boolean> {
         try {
-            const {fullName} =  await temporary__FunctionGetAuthorizedUserNameForNotifier(data[ENotifierQueueFields.authorId]) || {fullName: null}
-            if(!fullName) {
-                return false
-            }
-            await this.queueModel.create({...data, [ENotifierQueueFields.authorName]: fullName,[ENotifierQueueFields.addedAt]: Date.now()})
-            this.logger.debug(`Added post to queue ${data[ENotifierQueueFields.postId]}, author: ${fullName}`)
+            await this.queueModel.create({...data,[ENotifierQueueFields.addedAt]: Date.now()})
+            this.logger.debug(`Added post to queue ${data[ENotifierQueueFields.postId]}, author: ${data[ENotifierQueueFields.authorName]}`)
             return true
         } catch (error) {
             this.logger.error((error as Error).message)

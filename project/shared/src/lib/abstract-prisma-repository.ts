@@ -1,7 +1,7 @@
 import { IRepository } from "./abstract-repository";
 import { DbEntity, EDbDates, EId} from "../entities/db.entity";
 import { TPostEntity, TPrismaClientPostsTable, TTagsConnectOrCreate } from "../services/posts-prisma-repository.service";
-import { EPostSortBy, TPostId } from "../dtos/post.dto";
+import { EPostSortBy, TPostId } from "@shared";
 import { TLikeEntity, TPrismaClientLikesTable } from "../services/likes-prisma-repository.service";
 import { TLikeId } from "../dtos/like.dto";
 import { TCommentEntity, TPrismaClientCommentsTable } from "../services/comments-prisma-repository.service";

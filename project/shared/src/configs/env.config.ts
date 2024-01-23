@@ -1,11 +1,11 @@
 import {registerAs} from '@nestjs/config'
 import { validateConfig } from '../lib/config.validator'
 
-type TConfig = {[k: string] : string|number}
-const envConfig = registerAs('envConfig', (): TConfig => ({
+const _envConfig = Object.freeze({
     API_PREFIX: process.env.API_PREFIX as string ?? undefined,
     GATEWAY_API_PORT: +(process.env.GATEWAY_API_PORT as string ?? undefined),
     USERS_API_PORT: +(process.env.USERS_API_PORT as string ?? undefined),
+    USERS_MICROSERVICE_PORT: +(process.env.USERS_MICROSERVICE_PORT as string ?? undefined),
     BLOG_API_PORT: +(process.env.BLOG_API_PORT as string ?? undefined),
     NOTIFIER_API_PORT: +(process.env.NOTIFIER_API_PORT as string ?? undefined),
 
@@ -18,7 +18,10 @@ const envConfig = registerAs('envConfig', (): TConfig => ({
     API_DOCS_BLOG_DESCRIPTION: process.env.API_DOCS_BLOG_DESCRIPTION as string ?? undefined,
     API_DOCS_NOTIFIER_TITLE: process.env.API_DOCS_NOTIFIER_TITLE as string ?? undefined,
     API_DOCS_NOTIFIER_DESCRIPTION: process.env.API_DOCS_NOTIFIER_DESCRIPTION as string ?? undefined,
-}))
+})
+
+type TConfig = {[k: string] : string|number}
+const envConfig = registerAs('envConfig', (): TConfig => _envConfig)
 
 validateConfig(envConfig())
 

@@ -10,7 +10,6 @@ export function makeSwagger(app:INestApplication, {path, title, description, ver
                 .setTitle(title)
                 .setDescription(description)
                 .setVersion(version)
-                .addTag(tag)
                 .build()
         )
     )

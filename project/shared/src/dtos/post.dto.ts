@@ -1,20 +1,20 @@
-import type {} from "@nestjs/common"
 import { ArrayMaxSize, IsArray, IsDateString, IsEnum, IsNotEmpty, IsOptional, IsString, IsUrl, MaxLength, MinLength, NotContains, Validate, ValidateIf } from "class-validator"
 import { IsYoutubeLink } from "../lib/is-youtube-link.validator"
-import { ApiProperty, PickType } from '@nestjs/swagger'
+import { ApiHideProperty, ApiProperty, OmitType, PickType } from '@nestjs/swagger'
 import { appConfig } from "../configs/app.config";
 import { HasMimeType, IsFile, MaxFileSize, MemoryStoredFile } from "nestjs-form-data"
 import { EAllowedUploadedPostPhotoMimeTypes } from "../lib/file.validator"
-import { ERouteParams } from "../lib/route-params"
 import { Transform } from "class-transformer"
 import { EDbDates, EId, EPrismaDbTables } from "../entities/db.entity";
-import { TUserId } from "./user.dto";
+import { EUserDTOFields, ReturnedUserRDO, TUserId } from "./user.dto";
 import { JsonValue } from "@prisma/client/runtime/library";
 import { TCommentId } from "./comment.dto";
 import { ECommentDbEntityFields } from "../entities/comment.entity";
 import { ETagDbEntityFields, TTagId } from "../entities/tag.entity";
 import { TLikeId } from "./like.dto";
 import { ELikeDbEntityFields } from "../entities/like.entity";
+import {ERouteParams} from '../lib/routes';
+import {SortedPaginationDTO} from './pagination.dto';
 
 export type TPostId = string
 
@@ -31,12 +31,6 @@ export enum EPostState {
     draft = 'draft'
 }
 
-export enum EPostSortBy {
-    date = 'publishedAt',
-    likes = 'likes',
-    comments = 'comments',
-}
-
 export enum EPostDTOFields {
     postType = 'postType',
     tags = 'tags',
@@ -46,7 +40,7 @@ export enum EPostDTOFields {
 const _appConfig = appConfig()
 
 export class PostDTO {
-    @ApiProperty({required: false})
+    @ApiProperty({required: false, description: 'required'})
     @IsEnum(EPostType)
     readonly postType: EPostType
 
@@ -137,6 +131,16 @@ export class PostDTO {
         each: true,
     })
     readonly [EPostDTOFields.tags]?: string[]
+
+    @ApiHideProperty()
+    @IsString()
+    @IsNotEmpty()
+    readonly [EUserDTOFields.userId]: TUserId;
+
+    @ApiHideProperty()
+    @IsString()
+    @IsNotEmpty()
+    readonly [EUserDTOFields.fullName]: string;
 }
 
 export class PostIdDTO {
@@ -146,8 +150,8 @@ export class PostIdDTO {
     readonly postId: TPostId;
 }
 
-export class UpdatePostDTO extends PostDTO {
-    @ApiProperty({required: false })
+export class UpdatePostDTO extends OmitType(PostDTO, [EUserDTOFields.fullName] as const) {
+    @ApiProperty({required: false})
     @IsOptional()
     @Transform(({ value }) => !value ? [] : value)
     @Transform(({ value }) => typeof value === 'string' ? value.toLowerCase().split(',').map(String) : value)
@@ -165,19 +169,57 @@ export class UpdatePostDTO extends PostDTO {
         each: true,
     })
     readonly [EPostDTOFields.tags]?: string[]
+
+    @ApiHideProperty()
+    @IsString()
+    @IsNotEmpty()
+    readonly postId: TPostId;
 }
+
 export class RePublishPostDateDTO {
     @ApiProperty()
     @IsDateString()
     [EDbDates.publishedAt]: Date
+
+    @ApiHideProperty()
+    @IsString()
+    @IsNotEmpty()
+    readonly postId: TPostId;
+
+    @ApiHideProperty()
+    @IsString()
+    @IsNotEmpty()
+    readonly [EUserDTOFields.userId]: TUserId;
 }
 
-export class PostTypeDTO extends PickType(PostDTO, [EPostDTOFields.postType] as const) {
+export class DeletePostDTO {
+    @ApiHideProperty()
+    @IsString()
+    @IsNotEmpty()
+    readonly postId: TPostId;
 
+    @ApiHideProperty()
+    @IsString()
+    @IsNotEmpty()
+    readonly [EUserDTOFields.userId]: TUserId;
 }
+
+export class RePostDTO {
+    @ApiHideProperty()
+    @IsString()
+    @IsNotEmpty()
+    readonly postId: TPostId;
+
+    @ApiHideProperty()
+    @IsString()
+    @IsNotEmpty()
+    readonly [EUserDTOFields.userId]: TUserId;
+}
+
+export class PostTypeDTO extends PickType(PostDTO, [EPostDTOFields.postType] as const) {}
 
 export class PostTagDTO {
-    @ApiProperty()
+    @ApiProperty({required: true})
     @IsString()
     @MinLength(+_appConfig.POST_TAG_MIN_LENGTH)
     @MaxLength(+_appConfig.POST_TAG_MAX_LENGTH)
@@ -273,4 +315,33 @@ export class ReturnedPostRDO {
         [EId.id]: TTagId,
         [ETagDbEntityFields.name]: string,
     }[]
+}
+
+export class ReturnedHydratedPostRDO extends OmitType(ReturnedPostRDO, [EPostDbEntityFields.userId, EPostDbEntityFields.originalAuthorId, EPrismaDbTables.comments, EPrismaDbTables.likes] as const) {
+    ["author"]: null|ReturnedUserRDO;
+    ["originalAuthor"]: null|ReturnedUserRDO;
+    [EPrismaDbTables.comments]: {
+        [EId.id]: TCommentId,
+        [ECommentDbEntityFields.postId]: TPostId,
+        ["author"]: null|ReturnedUserRDO;
+        [ECommentDbEntityFields.userId]: undefined;
+        [ECommentDbEntityFields.comment]: string,
+        [EDbDates.createdAt]: string|number,
+        [EDbDates.updatedAt]: string|number,
+    }[];
+    [EPrismaDbTables.likes]: {
+        [EId.id]: TLikeId,
+        [ELikeDbEntityFields.postId]: TPostId;
+        ["author"]: null|ReturnedUserRDO;
+        [ELikeDbEntityFields.userId]: undefined;
+        [EDbDates.createdAt]: string|number,
+        [EDbDates.updatedAt]: string|number,
+    }[];
+}
+
+export class UserPostsDTO extends SortedPaginationDTO {
+    @ApiHideProperty()
+    @IsString()
+    @IsNotEmpty()
+    readonly [EUserDTOFields.userId]: string;
 }

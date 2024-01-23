@@ -1,35 +1,43 @@
-import { ValidationPipe } from '@nestjs/common'
-import { NestFactory, Reflector } from '@nestjs/core'
-import { UsersAppModule } from './app/users-app.module'
-import { AppError, AuthGuardPassesUserIdToRequest, ELoggerMessages, envConfig, makeSwagger} from '@shared'
+import {HttpStatus, ValidationPipe} from '@nestjs/common'
+import {NestFactory} from '@nestjs/core'
+import {UsersAppModule} from './app/users-app.module'
+import {AppRpcResponse, envConfig} from '@shared'
+import {Transport} from '@nestjs/microservices'
+import {RpcException} from '@nestjs/microservices'
 
 const _envConfig = envConfig()
 
 ;(async function () {
     try {
         const app = await NestFactory.create(UsersAppModule)
-        app.setGlobalPrefix(`${_envConfig.API_PREFIX}`)
-        app.useGlobalGuards(new AuthGuardPassesUserIdToRequest(new Reflector()))
         app.useGlobalPipes(new ValidationPipe({
+            transform: false,
             whitelist: true,
             forbidNonWhitelisted: true,
+            forbidUnknownValues: true,
+            disableErrorMessages: false,
+            exceptionFactory: (errors) =>  new RpcException(
+                (new AppRpcResponse()).makeError({
+                    messages: errors.map((error) => error.constraints),
+                    statusCode: HttpStatus.BAD_REQUEST,
+                }))
         }))
-        makeSwagger(app, {
-            path: `${_envConfig.API_DOCS_PATH}`,
-            title: `${_envConfig.API_DOCS_USER_TITLE}`,
-            description: `${_envConfig.API_DOCS_USER_DESCRIPTION}`,
-            version: `${_envConfig.API_PREFIX}`,
-        })
-        await app.listen(+_envConfig.USERS_API_PORT)
-        console.info('')
-        console.info(`Users is running on: http://localhost:${_envConfig.USERS_API_PORT}/${_envConfig.API_PREFIX}`)
-        console.info(`Users docs is running on: http://localhost:${_envConfig.USERS_API_PORT}/${_envConfig.API_DOCS_PATH}`)
-        console.info('')
+        app.connectMicroservice({
+            transport: Transport.TCP,
+            options: {
+                port: +_envConfig.USERS_API_PORT
+            },
+        }, {inheritAppConfig: true})
+        await app.startAllMicroservices()
+
+        setTimeout(() => {
+            console.info('')
+            console.info(`Users microservice is running on: localhost:${_envConfig.USERS_API_PORT}`)
+            console.info('')
+        }, 8000)
+
     } catch (error) {
-        throw new AppError({
-            error,
-            responseMessage: ELoggerMessages.badGateway,
-            payload: {},
-        })
+        console.error((error as Error).message)
+        process.exit(1)
     }
 })();

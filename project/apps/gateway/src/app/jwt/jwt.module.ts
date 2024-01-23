@@ -1,16 +1,16 @@
-import { Module } from '@nestjs/common';
+import {Module} from '@nestjs/common';
 import {JwtModule as _JwtModule} from '@nestjs/jwt'
-import { JwtController } from './jwt.controller';
-import { JwtService } from './jwt.service';
-import { jwtConfig} from '@shared';
-import { ConfigModule } from '@nestjs/config';
+import {JwtService} from './jwt.service';
+import {jwtConfig} from '@shared';
+import {ConfigModule} from '@nestjs/config';
 
 @Module({
     imports: [
         _JwtModule.registerAsync(jwtConfig.asProvider()),
         ConfigModule.forFeature(jwtConfig),
     ],
-    controllers: [JwtController],
+    controllers: [],
     providers: [JwtService],
+    exports: [JwtService]
 })
 export class JwtModule {}

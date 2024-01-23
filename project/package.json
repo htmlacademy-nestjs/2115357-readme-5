@@ -65,6 +65,6 @@
     "webpack-merge": "^5.10.0"
   },
   "scripts": {
-    "postinstall": "sh ./postinstall.sh && npx dotenv -e ./containers/blog/postgres/.env -- prisma generate --schema=./shared/src/prisma/blog/blog.prisma && npx dotenv -e ./containers/blog/postgres/.env -- prisma migrate dev --name init --schema=./shared/src/prisma/blog/blog.prisma"
+    "postinstall": "pnpm dotenv -e ./containers/blog/postgres/.env -- prisma generate --schema=./shared/src/prisma/blog/blog.prisma && pnpm dotenv -e ./containers/blog/postgres/.env -- prisma migrate dev --name init --schema=./shared/src/prisma/blog/blog.prisma"
   }
 }
