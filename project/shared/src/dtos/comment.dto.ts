@@ -89,5 +89,6 @@ export class ReturnedCommentRDO {
 }
 
 export class ReturnedHydratedCommentsRDO extends OmitType(ReturnedCommentRDO, [ECommentDbEntityFields.userId]) {
+    @ApiProperty({required: true})
     ["author"]: null|ReturnedUserRDO;
 }

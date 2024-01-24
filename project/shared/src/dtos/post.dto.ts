@@ -318,8 +318,11 @@ export class ReturnedPostRDO {
 }
 
 export class ReturnedHydratedPostRDO extends OmitType(ReturnedPostRDO, [EPostDbEntityFields.userId, EPostDbEntityFields.originalAuthorId, EPrismaDbTables.comments, EPrismaDbTables.likes] as const) {
+    @ApiProperty({required: true})
     ["author"]: null|ReturnedUserRDO;
+    @ApiProperty({required: true})
     ["originalAuthor"]: null|ReturnedUserRDO;
+    @ApiProperty({required: true})
     [EPrismaDbTables.comments]: {
         [EId.id]: TCommentId,
         [ECommentDbEntityFields.postId]: TPostId,
@@ -329,6 +332,7 @@ export class ReturnedHydratedPostRDO extends OmitType(ReturnedPostRDO, [EPostDbE
         [EDbDates.createdAt]: string|number,
         [EDbDates.updatedAt]: string|number,
     }[];
+    @ApiProperty({required: true})
     [EPrismaDbTables.likes]: {
         [EId.id]: TLikeId,
         [ELikeDbEntityFields.postId]: TPostId;
